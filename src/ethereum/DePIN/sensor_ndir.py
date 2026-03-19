@@ -74,6 +74,8 @@ while True:
         
         # Esperamos a que la red procese la tx para ver si falló
         recibo = w3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"⛽ Gas real consumido: {recibo.gasUsed} unidades de Gas")
+        
         if recibo.status == 1:
             print("✅ Transacción guardada en la blockchain con éxito.")
         else:
