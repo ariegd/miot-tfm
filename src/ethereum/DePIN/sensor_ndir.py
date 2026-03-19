@@ -7,9 +7,9 @@ import hashlib
 w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
 # ⚠️ RELLENA CON TUS DATOS DE GANACHE (Como hicimos antes)
-DIRECCION_CONTRATO = Web3.to_checksum_address("0xPegaAquiLaDireccionDelContrato")
-CLAVE_PRIVADA_SENSOR = "TuClavePrivadaAqui" 
-DIRECCION_SENSOR = Web3.to_checksum_address("0xPegaAquiLaCuenta1")
+DIRECCION_CONTRATO = Web3.to_checksum_address("0xd45398a5EEA5691F78eF5c7B24b108b2809B4fc9")
+CLAVE_PRIVADA_SENSOR = "0x24cfdbcdc11822aa56503e77c0dc3073e44785404aeab7d05e5de2a0e8ce4801" 
+DIRECCION_SENSOR = Web3.to_checksum_address("0x294df5986cdb4dc9c2bbfc679229997b17c99ee8")
 
 # ABI simplificado del nuevo contrato
 abi_sensor = [
@@ -32,8 +32,8 @@ contrato = w3.eth.contract(address=DIRECCION_CONTRATO, abi=abi_sensor)
 
 print("📡 Sensor NDIR (Oráculo) encendido y conectado.")
 
-# Variable para el patrón Publish-Subscribe (solo publicar si hay cambio > 50 ppm)
-UMBRAL_DE_CAMBIO = 50 
+# Variable para el patrón Publish-Subscribe (solo publicar si hay cambio > 15 ppm)
+UMBRAL_DE_CAMBIO = 15
 
 while True:
     print("\n--- Recopilando datos físicos ---")
@@ -71,6 +71,13 @@ while True:
         
         tx_firmada = w3.eth.account.sign_transaction(tx, CLAVE_PRIVADA_SENSOR)
         tx_hash = w3.eth.send_raw_transaction(tx_firmada.raw_transaction)
+        
+        # Esperamos a que la red procese la tx para ver si falló
+        recibo = w3.eth.wait_for_transaction_receipt(tx_hash)
+        if recibo.status == 1:
+            print("✅ Transacción guardada en la blockchain con éxito.")
+        else:
+            print("❌ LA TRANSACCIÓN FALLÓ (Revert de la EVM).")
         
         print(f"✅ Datos publicados en la red. Hash TX: {w3.to_hex(tx_hash)}")
     else:
