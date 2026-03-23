@@ -1,0 +1,21 @@
+dependencies:
+  chiehmin/sgp30:
+    component_hash: a3736a8c9494cd72d26bf6a69fcd805c597d7373488e05f377ee0c60539085fa
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.0.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.0.0
+  idf:
+    source:
+      type: idf
+    version: 5.5.0
+direct_dependencies:
+- chiehmin/sgp30
+- idf
+manifest_hash: 23e28e983346ea39847902c3fc0970e04cd607d1f708ecfe69f611db75779e43
+target: esp32c3
+version: 2.0.0
