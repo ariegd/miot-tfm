@@ -4,24 +4,24 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "driver/i2c.h"       // Controlador de hardware I2C de Espressif
-#include "sgp30/sgp30.h"      // El componente que acabas de instalar
+#include "driver/i2c.h"
+#include "sgp30/sgp30.h"
 
-// Definimos nuestros pines físicos basados en tu conexión
 #define I2C_MASTER_SDA_IO           4
 #define I2C_MASTER_SCL_IO           5
-#define I2C_MASTER_NUM              0       // Puerto I2C número 0
-#define I2C_MASTER_FREQ_HZ          100000  // Frecuencia estándar de 100kHz
+#define I2C_MASTER_NUM              0
+#define I2C_MASTER_FREQ_HZ          100000
 
 static const char *TAG = "MEDIDOR_AIRE";
 
-/**
- * @brief Función para inicializar los pines físicos del ESP32-C3 como I2C
- */
-static esp_err_t i2c_master_init(void)
-{
-    int i2c_master_port = I2C_MASTER_NUM;
+// Configuración global extraída de tu documentación
+static sgp30_config_t sgp30_config = {
+    .i2c_master_port = I2C_MASTER_NUM,
+    .i2c_address = 0x58
+};
 
+// --- INICIALIZACIÓN DE HARDWARE I2C ---
+static esp_err_t i2c_master_init(void) {
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = I2C_MASTER_SDA_IO,
@@ -30,55 +30,39 @@ static esp_err_t i2c_master_init(void)
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_MASTER_FREQ_HZ,
     };
-
-    i2c_param_config(i2c_master_port, &conf);
-
-    // Instala el driver en el sistema operativo
-    return i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0);
+    i2c_param_config(I2C_MASTER_NUM, &conf);
+    return i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
 }
 
-void app_main(void)
-{
-    ESP_LOGI(TAG, "Iniciando sistema...");
+// ---------------------------------------------------------
+// LA TAREA DEL SENSOR (Independiente y a prueba de fallos)
+// ---------------------------------------------------------
+void sgp30_task(void *pvParameters) {
+    ESP_LOGI(TAG, "Tarea del sensor iniciada. Calentando SGP30...");
 
-    // 1. Inicializar el hardware (Pines 4 y 5)
-    ESP_ERROR_CHECK(i2c_master_init());
-    ESP_LOGI(TAG, "Bus I2C inicializado correctamente en pines 4(SDA) y 5(SCL)");
-
-    // 2. Configurar el sensor SGP30
-    sgp30_config_t config = {
-        .i2c_master_port = I2C_MASTER_NUM,  // Debe coincidir con el puerto inicializado arriba
-        .i2c_address = 0x58                 // Dirección por defecto que vimos en el escáner
-    };
-
-    // 3. Inicializar el SGP30
-    esp_err_t ret = sgp30_init(&config);
+    // Inicialización de la API proporcionada en tu documentación
+    esp_err_t ret = sgp30_init(&sgp30_config);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Error al inicializar el sensor SGP30. Revisa las conexiones.");
-        return; // Si falla, detenemos el programa aquí
+        ESP_LOGE(TAG, "Fallo al inicializar SGP30");
+        vTaskDelete(NULL); // Destruye esta tarea si falla el hardware
     }
 
-    // 4. Leer y mostrar el ID de serie único del chip
     uint8_t serial_id[6];
-    ret = sgp30_get_serial_id(serial_id);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Sensor detectado! Serial ID: %02X%02X%02X%02X%02X%02X",
+    if (sgp30_get_serial_id(serial_id) == ESP_OK) {
+        ESP_LOGI(TAG, "Sensor listo! Serial ID: %02X%02X%02X%02X%02X%02X",
                  serial_id[0], serial_id[1], serial_id[2],
                  serial_id[3], serial_id[4], serial_id[5]);
     }
 
-    ESP_LOGI(TAG, "Comenzando las lecturas. El SGP30 necesita unos 15 seg de calentamiento...");
+    // Variables para el Ritmo Absoluto (Evita el desfase de tiempo)
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000); // 1000 ms exactos
 
-    // Configuramos el tiempo exacto para vTaskDelayUntil
-    TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pdMS_TO_TICKS(1000); // Exactamente 1000 ms
+    ESP_LOGI(TAG, "Iniciando lecturas periódicas...");
 
-    // Guardamos la marca de tiempo actual antes de entrar al bucle
-    xLastWakeTime = xTaskGetTickCount();
-
-    // 5. Bucle infinito con precisión absoluta
+    // Bucle infinito propio de la tarea (Aislado del resto del sistema)
     while (1) {
-        // Esta función garantiza que el bucle se ejecute cada 1000ms exactos
+        // Pausa precisa: el procesador queda libre para otras cosas (como WiFi) durante 1 seg
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         uint16_t co2, tvoc;
@@ -87,7 +71,26 @@ void app_main(void)
         if (ret == ESP_OK) {
             printf("CO2: %d ppm \t TVOC: %d ppb\n", co2, tvoc);
         } else {
-            ESP_LOGW(TAG, "Fallo al leer las mediciones este segundo");
+            ESP_LOGW(TAG, "Error I2C temporal: %s", esp_err_to_name(ret));
         }
     }
+}
+
+// --- FUNCIÓN PRINCIPAL ---
+void app_main(void) {
+    ESP_LOGI(TAG, "Iniciando hardware base...");
+    ESP_ERROR_CHECK(i2c_master_init());
+
+    // Crear la tarea dedicada en FreeRTOS
+    // Esto crea un hilo de ejecución totalmente independiente para el sensor
+    xTaskCreate(
+        sgp30_task,          // Función que ejecuta la tarea
+        "sgp30_task",        // Nombre para depuración
+        4096,                // Memoria RAM asignada (Stack de 4KB)
+    NULL,                // Parámetros (ninguno)
+    5,                   // Prioridad alta (Recomendado para tareas I2C)
+    NULL                 // Handle de la tarea (no lo necesitamos)
+    );
+
+    ESP_LOGI(TAG, "app_main() finalizada. FreeRTOS toma el control de las tareas.");
 }
