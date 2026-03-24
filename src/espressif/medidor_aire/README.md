@@ -32,8 +32,42 @@ A continuación se muestra una explicación de los archivos en la carpeta del pr
 ```
 
 ## Visualizando la Máquina de Estados Finitos (FSM)
+**1\. FSM del Productor (La Tarea Aislada: sgp30\_task)**
+
+Esta es la máquina de estados "sucia", la que baja al barro a pelearse con los voltajes, el bus I2C y los tiempos físicos del sensor.
+
+* **ESTADO 0: INIT (Arranque y Calentamiento)**  
+  * **Acción:** Configura el I2C, despierta al SGP30 y espera 15 segundos en silencio absoluto (bloqueo vTaskDelay).  
+  * **Transición:** Pasa automáticamente al ESTADO 1 cuando terminan los 15s.  
+* **ESTADO 1: SLEEP / SYNC (Reposo Preciso)**  
+  * **Acción:** La tarea se duerme profundamente gracias a vTaskDelayUntil. No consume ciclos de CPU.  
+  * **Transición:** Despierta exactamente 1 segundo después y pasa al ESTADO 2\.  
+* **ESTADO 2: READING (Bloqueo Hardware)**  
+  * **Acción:** Secuestra el bus I2C y espera (\~12ms) a que el SGP30 devuelva los cálculos de CO2 y TVOC.  
+  * **Transición A (Éxito):** Pasa al ESTADO 3\.  
+  * **Transición B (Fallo I2C / NACK):** Loggea una advertencia y regresa al ESTADO 1 (así nunca se cuelga).  
+* **ESTADO 3: NOTIFYING (Disparo del Evento)**  
+  * **Acción:** Empaqueta el CO2 y TVOC en una caja (sgp30\_data\_t) y la lanza al viento mediante esp\_event\_post.  
+  * **Transición:** Vuelve inmediatamente al ESTADO 1 para dormir hasta el siguiente segundo.
+
+
+**2\. FSM del Consumidor (El Sistema Operativo: sys\_evt)**
+
+Esta es la máquina de estados "limpia". Vive en la capa superior del programa y no le importa si el cable I2C se ha desconectado o si el sensor está ardiendo. Solo reacciona a los datos puros.
+
+* **ESTADO A: IDLE (A la escucha)**  
+  * **Acción:** El bucle de eventos general de ESP-IDF está gestionando sus cosas en la sombra (preparado para WiFi, botones, etc.), esperando a que alguien grite su base de eventos (SENSOR\_EVENT\_BASE).  
+  * **Transición:** Cuando el Productor lanza el evento (ESTADO 3 del productor), salta al ESTADO B.  
+* **ESTADO B: HANDLING (Procesamiento reactivo)**  
+  * **Acción:** Ejecuta instantáneamente tu función sensor\_data\_handler. Abre la caja con los datos, imprime el printf en pantalla.  
+  * **Transición:** Una vez termina de imprimir (o de enviar los datos en el futuro), vuelve al ESTADO A.
+
 ```
-INICIALIZACIÓN → CALENTAMIENTO (espera de 15s) → LECTURA_ACTIVA (loop reactivo de 1s). 
+#Productor
+ESTADO 0: INIT → ESTADO 1: SLEEP / SYNC → ESTADO 2: READING → ESTADO 3: NOTIFYING. 
+
+#Consumidor
+EESTADO A: IDLE → ESTADO B: HANDLING. 
 ```
 Si en cualquier punto algo falla catastróficamente, el sistema pasa a **ERROR\_CRÍTICO** y decide cómo reaccionar
 
@@ -117,9 +151,6 @@ Vamos a hacer lo que se llama el **Patrón Productor-Consumidor**. Es la arquite
 Así tenemos la robustez de FreeRTOS y la elegancia del Event Loop.
 Al final hemos dado un rodeo inmenso para darnos cuenta de que: la separación de recursos a nivel embebido requiere **híbridos**. Una tarea sucia (pero segura) que hable con el hardware, y un bucle de eventos limpio que mueva la información.  
 Presionamos el botón de flashear (recordamos hacer el ciclo de energía quitando el USB un segundito)
-**Fuentes**  
-1\. [https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMG250-API-Support-bmg-init-error/td-p/21182](https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMG250-API-Support-bmg-init-error/td-p/21182)  
-2\. [https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMG250-API-Support-bmg-init-error/td-p/21182](https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMG250-API-Support-bmg-init-error/td-p/21182)
 
 ### ⚠️ ¿Qué ha provocado la parálisis?
 El Bucle de Eventos por defecto de ESP-IDF corre sobre un único hilo del sistema llamado sys\_evt. Su trabajo es ser rapidísimo repartiendo mensajes.  
