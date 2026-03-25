@@ -14,7 +14,7 @@
 #define I2C_MASTER_NUM              0
 #define I2C_MASTER_FREQ_HZ          100000
 
-static const char *TAG = "MEDIDOR_AIRE";
+static const char *TAG = "SENSOR_SGP30";
 
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENT_BASE);
 

@@ -1,4 +1,4 @@
-menu "Example Configuration"
+menu "Ble Configuration"
 
     choice EXAMPLE_USE_IO_TYPE
         prompt "I/O Capability"

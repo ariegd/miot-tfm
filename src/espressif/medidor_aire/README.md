@@ -32,12 +32,16 @@ medidor_aire/
 │   │   └── red_wifi.c
 │   └── red_ble/            (El Consumidor Portátil)
 │   │   ├── CMakeLists.txt
-│   │   ├── idf_component.yml      (Pégalo tal cual, es vital para las dependencias)
-│   │   ├── Kconfig.projbuild      (Pégalo tal cual)
-│   │   ├── bleprph.h              (Pégalo tal cual, será interno del componente)
-│   │   ├── gatt_svr.c             (Pégalo tal cual, no hay que tocarlo)
+│   │   ├── idf_component.yml      
+│   │   ├── Kconfig.projbuild      
+│   │   ├── bleprph.h              
+│   │   ├── gatt_svr.c             
 │   │   ├── include/red_ble.h
 │   │   └── red_ble.c
+│   ├── boton_boot/           (El Consumidor Fijo)
+│   │   ├── CMakeLists.txt
+│   │   ├── include/boton_boot.h
+│   │   └── boton_boot.c
 ├── main/                       (El Director de Orquesta)
 │   ├── CMakeLists.txt
 │   └── medidor_aire_main.c     (Lee botón BOOT, lee NVS, y enciende el modo correcto)
@@ -45,44 +49,44 @@ medidor_aire/
 ```
 
 ## Visualizando la Máquina de Estados Finitos (FSM)
-**1\. FSM del Productor (La Tarea Aislada: sgp30\_task)**
+**📍 Los Estados (States)**
 
-Esta es la máquina de estados "sucia", la que baja al barro a pelearse con los voltajes, el bus I2C y los tiempos físicos del sensor.
+1. **S0: INICIALIZACIÓN (BOOT)**  
+   * El ESP32 recibe energía o se reinicia.  
+   * Se inicializa la memoria no volátil (NVS).  
+2. **S1: EVALUACIÓN DE RED**  
+   * Se lee la variable modo\_red desde la memoria NVS.  
+   * Se configura la interrupción/tarea del boton\_boot en segundo plano.  
+3. **S2: ARRANQUE DE COMUNICACIONES \- WI-FI**  
+   * Se inicializa el stack TCP/IP.  
+   * El dispositivo se conecta al router y obtiene una IP.  
+4. **S3: ARRANQUE DE COMUNICACIONES \- BLUETOOTH (BLE)**  
+   * Se inicializa el stack NimBLE y el servidor GATT.  
+   * El ESP32 comienza a anunciarse (Advertising).  
+5. **S4: ARRANQUE SENSOR (SGP30) Y BUCLE PRINCIPAL**  
+   * *A este estado se llega solo tras haber completado S2 o S3.*  
+   * Se levanta el bus I2C.  
+   * Comienza el *warmup* estricto de 15 segundos.  
+   * Arranca el motor Productor-Consumidor (FreeRTOS) con el timer perfectamente sincronizado a 1Hz.  
+6. **S5: TRANSICIÓN Y REINICIO**  
+   * Se invierte el valor de la red en la memoria NVS.  
+   * Se ejecuta esp\_restart() (reinicio por software).
 
-* **ESTADO 0: INIT (Arranque y Calentamiento)**  
-  * **Acción:** Configura el I2C, despierta al SGP30 y espera 15 segundos en silencio absoluto (bloqueo vTaskDelay).  
-  * **Transición:** Pasa automáticamente al ESTADO 1 cuando terminan los 15s.  
-* **ESTADO 1: SLEEP / SYNC (Reposo Preciso)**  
-  * **Acción:** La tarea se duerme profundamente gracias a vTaskDelayUntil. No consume ciclos de CPU.  
-  * **Transición:** Despierta exactamente 1 segundo después y pasa al ESTADO 2\.  
-* **ESTADO 2: READING (Bloqueo Hardware)**  
-  * **Acción:** Secuestra el bus I2C y espera (\~12ms) a que el SGP30 devuelva los cálculos de CO2 y TVOC.  
-  * **Transición A (Éxito):** Pasa al ESTADO 3\.  
-  * **Transición B (Fallo I2C / NACK):** Loggea una advertencia y regresa al ESTADO 1 (así nunca se cuelga).  
-* **ESTADO 3: NOTIFYING (Disparo del Evento)**  
-  * **Acción:** Empaqueta el CO2 y TVOC en una caja (sgp30\_data\_t) y la lanza al viento mediante esp\_event\_post.  
-  * **Transición:** Vuelve inmediatamente al ESTADO 1 para dormir hasta el siguiente segundo.
+**🔀 Las Transiciones (Transitions) y Eventos**
 
-
-**2\. FSM del Consumidor (El Sistema Operativo: sys\_evt)**
-
-Esta es la máquina de estados "limpia". Vive en la capa superior del programa y no le importa si el cable I2C se ha desconectado o si el sensor está ardiendo. Solo reacciona a los datos puros.
-
-* **ESTADO A: IDLE (A la escucha)**  
-  * **Acción:** El bucle de eventos general de ESP-IDF está gestionando sus cosas en la sombra (preparado para WiFi, botones, etc.), esperando a que alguien grite su base de eventos (SENSOR\_EVENT\_BASE).  
-  * **Transición:** Cuando el Productor lanza el evento (ESTADO 3 del productor), salta al ESTADO B.  
-* **ESTADO B: HANDLING (Procesamiento reactivo)**  
-  * **Acción:** Ejecuta instantáneamente tu función sensor\_data\_handler. Abre la caja con los datos, imprime el printf en pantalla.  
-  * **Transición:** Una vez termina de imprimir (o de enviar los datos en el futuro), vuelve al ESTADO A.
+* **\[ Power ON / Reset \]** ➔ Entra a **S0**  
+* **S0** ➔ (Automático al terminar NVS) ➔ **S1**  
+* **S1** ➔ (Si NVS \== 1\) ➔ **S2** (Modo Wi-Fi)  
+* **S1** ➔ (Si NVS \== 0\) ➔ **S3** (Modo Bluetooth)  
+* **S2** o **S3** ➔ (Automático al estabilizar la red) ➔ **S4** (Arranca el sensor)  
+* **Desde cualquier estado activo (S2, S3, o S4)** ➔ (Evento: Tarea boton\_boot detecta pulsación) ➔ **S5**  
+* **S5** ➔ (Reinicio por software) ➔ Vuelve a **S0**
 
 ```
-#Productor
-ESTADO 0: INIT → ESTADO 1: SLEEP / SYNC → ESTADO 2: READING → ESTADO 3: NOTIFYING. 
+S0: INICIALIZACIÓN (BOOT) → S1: EVALUACIÓN DE RED → S2: ARRANQUE DE COMUNICACIONES \- WI-FI → S3: ARRANQUE DE COMUNICACIONES \- BLUETOOTH (BLE) 
+ → S4: ARRANQUE SENSOR (SGP30) Y BUCLE PRINCIPAL → S5: TRANSICIÓN Y REINICIO
 
-#Consumidor
-EESTADO A: IDLE → ESTADO B: HANDLING. 
 ```
-Si en cualquier punto algo falla catastróficamente, el sistema pasa a **ERROR\_CRÍTICO** y decide cómo reaccionar
 
 ### Hardware requerido
 * Una placa de desarrollo con ESP32/ESP32-C3 SoC (e.g., ESP32-DevKitC, ESP-WROVER-KIT, etc.).
@@ -155,6 +159,30 @@ EVENTO RECIBIDO -> CO2: 415 ppm          TVOC: 7 ppb
 ```
 
 ## Problemas y soluciones
+### ⚠️ Cómo se diseñan los dispositivos IoT comerciales? 
+Un solo firmware, un botón físico para configurar, y la memoria no volátil (NVS) recordando la última configuración. Hay un secreto de la industria muy importante sobre cómo hacer esto en el ESP32: No intentes apagar el Wi-Fi y encender el Bluetooth "en caliente" (sin reiniciar).
+
+Liberar toda la memoria de la pila Wi-Fi para arrancar la de Bluetooth sobre la marcha suele dar problemas de fragmentación de RAM y colapsos en la antena de radio. Lo que hacen el 99% de los dispositivos comerciales es:
+
+1. Detectar el botón.
+2. Cambiar una variable en la NVS.
+3. Lanzar un reinicio por software (`esp_restart()`).
+4. Al arrancar de nuevo (tarda 1 segundo), el `if (modo_wifi)` lee el nuevo estado e inicia la red correcta con la memoria 100% limpia.
+
+Si arrancamos el SGP30 al principio, los segundos que tarde el Wi-Fi en negociar la IP con el router o el BLE en levantar su stack de radio van a consumir tiempo del *warmup* del sensor. Como el SGP30 exige una lectura estricta a 1Hz (una vez por segundo) para calcular bien sus algoritmos internos de línea base (baseline), cualquier bloqueo de red desfasaría el timer y corrompería las medidas iniciales.
+
+### ⚠️ ¿Cómo se soluciona esto en el mundo real del IoT?
+
+En la industria comercial, cuando un dispositivo no tiene pantalla, se utilizan estas alternativas:
+
+* **PIN Estático Único (Impreso en pegatina):** En la fábrica se graba un PIN único y aleatorio en la memoria no volátil (NVS) de cada ESP32 y se imprime en una pegatina debajo del sensor. El código lee ese PIN de la memoria, no de un número fijo en el .c.
+
+* **Derivar el PIN de la MAC:** Se programa una función para que el PIN sea, por ejemplo, los últimos 6 dígitos en base 10 de la dirección MAC única del chip de Espressif. Así, cada dispositivo tiene un PIN distinto que no viaja por el aire.
+
+* **Modo "Just Works" (Sin PIN):** Se configura el Bluetooth para que no pida PIN. La comunicación sigue yendo encriptada por el aire, pero sacrificas la autenticación (cualquiera que esté cerca en el modo emparejamiento podría conectarse). Es lo que usan la mayoría de altavoces o auriculares Bluetooth.
+
+* **Out of Band (OOB):** Se pone un código QR o un chip NFC en el dispositivo. El móvil lee el QR con la cámara y obtiene la clave criptográfica sin tener que teclear nada.
+    
 ### ⚠️ La autopsia del Log (¿Qué pasó realmente?)
 El ESP32-C3 y tu SGP30 comparten la misma línea de alimentación de 3.3V.
 

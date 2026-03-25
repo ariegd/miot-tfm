@@ -496,7 +496,7 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# Example Configuration
+# Ble Configuration
 #
 # CONFIG_BLE_SM_IO_CAP_DISP_ONLY is not set
 # CONFIG_BLE_SM_IO_CAP_DISP_YES_NO is not set
@@ -511,10 +511,10 @@ CONFIG_EXAMPLE_IO_TYPE=3
 # CONFIG_EXAMPLE_RANDOM_ADDR is not set
 # CONFIG_EXAMPLE_ENCRYPTION is not set
 # CONFIG_EXAMPLE_RESOLVE_PEER_ADDR is not set
-# end of Example Configuration
+# end of Ble Configuration
 
 #
-# Example Configuration
+# Wifi Configuration
 #
 CONFIG_ESP_WIFI_SSID="Ariel's-Galaxy"
 CONFIG_ESP_WIFI_PASSWORD=""
@@ -531,7 +531,7 @@ CONFIG_ESP_WIFI_AUTH_WPA2_PSK=y
 # CONFIG_ESP_WIFI_AUTH_WPA3_PSK is not set
 # CONFIG_ESP_WIFI_AUTH_WPA2_WPA3_PSK is not set
 # CONFIG_ESP_WIFI_AUTH_WAPI_PSK is not set
-# end of Example Configuration
+# end of Wifi Configuration
 
 #
 # Compiler options
