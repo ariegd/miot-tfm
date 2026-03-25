@@ -7,6 +7,7 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "red_wifi.h"
+#include "mqtt_client.h"
 #include "sensor_sgp30.h"
 
 // Macros heredadas de tu Kconfig
@@ -23,6 +24,42 @@ static EventGroupHandle_t s_wifi_event_group;
 static const char *TAG = "wifi_comp";
 static int s_retry_num = 0;
 
+// Variable global para el cliente MQTT dentro de este archivo
+static esp_mqtt_client_handle_t mqtt_client = NULL;
+
+// Handler para gestionar los eventos propios del protocolo MQTT
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
+    esp_mqtt_event_handle_t event = event_data;
+    switch ((esp_mqtt_event_id_t)event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "MQTT Conectado al broker exitosamente");
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGW(TAG, "MQTT Desconectado del broker");
+            break;
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGI(TAG, "MQTT Mensaje publicado (msg_id=%d)", event->msg_id);
+            break;
+        case MQTT_EVENT_ERROR:
+            ESP_LOGE(TAG, "MQTT Error crítico");
+            break;
+        default:
+            break;
+    }
+}
+
+// Función para inicializar el cliente MQTT
+static void mqtt_app_start(void) {
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .broker.address.uri = "mqtt://test.mosquitto.org", // Broker público para pruebas
+    };
+
+    ESP_LOGI(TAG, "Iniciando cliente MQTT...");
+    mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    esp_mqtt_client_start(mqtt_client);
+}
+
 // 1. Crear el handler específico para Wi-Fi
 static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* event_data) {
     if (base == SENSOR_EVENT_BASE && id == SENSOR_EVENT_DATA_READY) {
@@ -30,6 +67,15 @@ static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int
         ESP_LOGI(TAG, "[WI-FI] Dato listo para enviar -> CO2: %d ppm | TVOC: %d ppb", data->co2, data->tvoc);
 
         // ¡Aquí enviaremos el dato por MQTT, HTTP, Websockets, etc!
+        if (mqtt_client != NULL) {
+            char payload[64];
+            // Formateamos el string en formato JSON tal como recomiendan las notas de Espressif
+            snprintf(payload, sizeof(payload), "{\"co2eq\":%d,\"tvoc\":%d}", data->co2, data->tvoc);
+
+            // Publicamos: Topic, Payload, Longitud(0=auto), QoS(1), Retain(0)
+            int msg_id = esp_mqtt_client_publish(mqtt_client, "/sensor/sgp30/telemetria", payload, 0, 1, 0);
+            ESP_LOGI(TAG, "[WI-FI] Dato enviado por MQTT (msg_id=%d) -> %s", msg_id, payload);
+        }
     }
 }
 
@@ -85,16 +131,20 @@ void red_wifi_start(void) {
 
     // Opcional: Esperar a que conecte o falle para avisar al main
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-
+    /*
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID:%s", EXAMPLE_ESP_WIFI_SSID);
     }
+    */
 
     // 2. Dentro de tu función red_wifi_start(void), justo al final (después de comprobar que tienes IP):
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
+
+        // 1. Arrancamos el cliente MQTT
+        mqtt_app_start();
 
         // 3. Registramos el handler AL ESTAR CONECTADOS
         ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, wifi_telemetry_handler, NULL));

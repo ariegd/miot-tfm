@@ -145,20 +145,44 @@ Ejecute `idf.py -p PORT flash monitor` para compilar, actualizar y monitorear el
 ## Ejemplo de Salida
 ```
 ...
-EVENTO RECIBIDO -> CO2: 400 ppm          TVOC: 0 ppb
-EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 4 ppb
-EVENTO RECIBIDO -> CO2: 420 ppm          TVOC: 6 ppb
-EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 7 ppb
-EVENTO RECIBIDO -> CO2: 411 ppm          TVOC: 7 ppb
-EVENTO RECIBIDO -> CO2: 429 ppm          TVOC: 12 ppb
-EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 12 ppb
-EVENTO RECIBIDO -> CO2: 412 ppm          TVOC: 3 ppb
-EVENTO RECIBIDO -> CO2: 415 ppm          TVOC: 7 ppb
+I (134290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 20 ppb
+I (135290) NimBLE: [BLE] Dato listo para notificar -> CO2: 413 ppm | TVOC: 26 ppb
+I (136290) NimBLE: [BLE] Dato listo para notificar -> CO2: 406 ppm | TVOC: 28 ppb
+I (137290) NimBLE: [BLE] Dato listo para notificar -> CO2: 400 ppm | TVOC: 20 ppb
+I (138290) NimBLE: [BLE] Dato listo para notificar -> CO2: 405 ppm | TVOC: 21 ppb
+I (139290) NimBLE: [BLE] Dato listo para notificar -> CO2: 416 ppm | TVOC: 24 ppb
+I (140290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 23 ppb
 ...
 
 ```
 
 ## Problemas y soluciones
+### ⚠️ Problema de espacio
+Al juntar Wi-Fi, Bluetooth (NimBLE), el Event Loop, NVS y ahora el cliente MQTT, tu código compilado (`medidor_aire.bin`) pesa 1.13 MB (`0x122100`). Sin embargo, la tabla de particiones por defecto de ESP-IDF solo reserva 1 MB (`0x100000`) para tu aplicación. Básicamente, estamos intentando meter un camión en la plaza de un coche.
+
+Para solucionarlo, solo necesitamos decirle al ESP32 que reorganice su memoria flash usando una tabla de particiones más grande.
+
+Cambiar la tabla de particiones
+1. Navega usando las flechas de tu teclado hasta la sección `Partition Table` y entra con `Enter`.
+2. Entra en la primera opción, que también se llama `Partition Table`.
+3. Verás una lista de opciones. Selecciona `Single factory app (large), no OTA` (esto ampliará el espacio disponible para tu código a 1.5 MB).
+4. Pulsa la tecla `S` para guardar (Save) y luego `Enter` para confirmar.
+5. Pulsa la tecla `Q` para salir (Quit) del menú.
+
+### ⚠️ Filosofía de Espressif y la arquitectura de eventos
+Dado que en tu aplicación la red Wi-Fi y el MQTT van de la mano (si estás en modo Wi-Fi, quieres enviar por MQTT), la forma más limpia y cohesiva de implementarlo sin crear excesivos archivos es añadir el cliente MQTT dentro de tu componente red_wifi.c.
+
+El flujo será el siguiente:
+1. El ESP32 se conecta al Wi-Fi.
+2. Arranca el cliente MQTT.
+3. Se registra el handler del sensor.
+4. Cada vez que el SGP30 publica un dato al Event Loop, el handler lo empaqueta en JSON y lo dispara por MQTT.
+
+Si quieres ver los datos llegando en tiempo real desde tu ordenador, puedes abrir otra terminal y usar mosquitto_sub (si lo tienes instalado en Linux):
+```
+mosquitto_sub -h test.mosquitto.org -t "/sensor/sgp30/telemetria" -v
+```
+
 ### ⚠️ Opción 3 (Event Loop). 
 Nuestro archivo `sensor_sgp30.c` ya tiene implementado el Event Loop de forma nativa (Option 3). El Event Loop es más adecuado cuando múltiples consumidores necesitan reaccionar al mismo dato. Aunque solo se active una red a la vez, aprovechar la infraestructura de eventos que ya tenemos es el camino de menor resistencia, más escalable, y evita que tengamos que reescribir la lógica de nuestro sensor.
 
