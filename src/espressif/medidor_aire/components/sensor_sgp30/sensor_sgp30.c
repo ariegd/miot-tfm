@@ -17,7 +17,7 @@
 static const char *TAG = "SENSOR_SGP30";
 
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENT_BASE);
-
+/*
 typedef enum {
     SENSOR_EVENT_DATA_READY
 } sensor_event_id_t;
@@ -27,7 +27,7 @@ typedef struct {
     uint16_t co2;
     uint16_t tvoc;
 } sgp30_data_t;
-
+*/
 static sgp30_config_t sgp30_config = {
     .i2c_master_port = I2C_MASTER_NUM,
     .i2c_address = 0x58
@@ -49,6 +49,7 @@ static esp_err_t i2c_master_init(void) {
 // ---------------------------------------------------------
 // EL CONSUMIDOR: Event Handler (Reactivo y Rápido)
 // ---------------------------------------------------------
+/*
 static void sensor_data_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* event_data) {
     if (base == SENSOR_EVENT_BASE && id == SENSOR_EVENT_DATA_READY) {
         // Desempaquetamos los datos que nos llegaron
@@ -58,6 +59,7 @@ static void sensor_data_handler(void* handler_arg, esp_event_base_t base, int32_
         // ¡Aquí en el futuro mandarás el dato por MQTT o WiFi!
     }
 }
+*/
 
 // ---------------------------------------------------------
 // EL PRODUCTOR: Tarea Aislada I2C (El motor que nunca falla)
@@ -94,7 +96,7 @@ void sensor_sgp30_start(void) {
     //ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // Registrar el handler para que escuche cuando haya datos
-    ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, sensor_data_handler, NULL));
+    //ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, sensor_data_handler, NULL));
 
     ESP_LOGI(TAG, "Inicializando sensor (Bloqueo de 15s por Warmup)...");
     if (sgp30_init(&sgp30_config) != ESP_OK) {

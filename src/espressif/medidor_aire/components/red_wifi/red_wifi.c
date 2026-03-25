@@ -7,6 +7,7 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "red_wifi.h"
+#include "sensor_sgp30.h"
 
 // Macros heredadas de tu Kconfig
 #define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
@@ -21,6 +22,16 @@ static EventGroupHandle_t s_wifi_event_group;
 
 static const char *TAG = "wifi_comp";
 static int s_retry_num = 0;
+
+// 1. Crear el handler específico para Wi-Fi
+static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* event_data) {
+    if (base == SENSOR_EVENT_BASE && id == SENSOR_EVENT_DATA_READY) {
+        sgp30_data_t* data = (sgp30_data_t*)event_data;
+        ESP_LOGI(TAG, "[WI-FI] Dato listo para enviar -> CO2: %d ppm | TVOC: %d ppb", data->co2, data->tvoc);
+
+        // ¡Aquí enviaremos el dato por MQTT, HTTP, Websockets, etc!
+    }
+}
 
 // El Handler Asíncrono (Exactamente igual que el original)
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -77,6 +88,17 @@ void red_wifi_start(void) {
 
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
+    } else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID:%s", EXAMPLE_ESP_WIFI_SSID);
+    }
+
+    // 2. Dentro de tu función red_wifi_start(void), justo al final (después de comprobar que tienes IP):
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
+
+        // 3. Registramos el handler AL ESTAR CONECTADOS
+        ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, wifi_telemetry_handler, NULL));
+
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID:%s", EXAMPLE_ESP_WIFI_SSID);
     }

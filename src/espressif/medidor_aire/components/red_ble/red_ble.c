@@ -28,6 +28,7 @@
 #include "services/gap/ble_svc_gap.h"
 #include "bleprph.h"
 #include "red_ble.h"
+#include "sensor_sgp30.h"
 
 #if CONFIG_EXAMPLE_EXTENDED_ADV
 static uint8_t ext_adv_pattern_1[] = {
@@ -45,6 +46,16 @@ static uint8_t own_addr_type = BLE_OWN_ADDR_RANDOM;
 #else
 static uint8_t own_addr_type;
 #endif
+
+// 1. Crear el handler específico para BLE
+static void ble_telemetry_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* event_data) {
+    if (base == SENSOR_EVENT_BASE && id == SENSOR_EVENT_DATA_READY) {
+        sgp30_data_t* data = (sgp30_data_t*)event_data;
+        MODLOG_DFLT(INFO, "[BLE] Dato listo para notificar -> CO2: %d ppm | TVOC: %d ppb\n", data->co2, data->tvoc);
+
+        // ¡Aquí actualizaremos la Característica GATT y notificaremos al móvil!
+    }
+}
 
 #if MYNEWT_VAL(BLE_EATT_CHAN_NUM) > 0
 static uint16_t cids[MYNEWT_VAL(BLE_EATT_CHAN_NUM)];
@@ -640,6 +651,9 @@ red_ble_start(void)
     ble_store_config_init();
 
     nimble_port_freertos_init(bleprph_host_task);
+
+    // 3. Registramos el handler para el ecosistema BLE
+    ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, ble_telemetry_handler, NULL));
 
     /* Initialize command line interface to accept input from user
     rc = scli_init();

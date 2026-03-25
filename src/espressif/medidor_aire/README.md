@@ -159,6 +159,11 @@ EVENTO RECIBIDO -> CO2: 415 ppm          TVOC: 7 ppb
 ```
 
 ## Problemas y soluciones
+### ⚠️ Opción 3 (Event Loop). 
+Nuestro archivo `sensor_sgp30.c` ya tiene implementado el Event Loop de forma nativa (Option 3). El Event Loop es más adecuado cuando múltiples consumidores necesitan reaccionar al mismo dato. Aunque solo se active una red a la vez, aprovechar la infraestructura de eventos que ya tenemos es el camino de menor resistencia, más escalable, y evita que tengamos que reescribir la lógica de nuestro sensor.
+
+Con estos cambios, el SGP30 publicará el dato al Event Loop global. Como el ESP32 solo habrá arrancado una red (según el valor en la NVS), solo esa red registrará su handler y escuchará los datos, manteniendo la separación de responsabilidades intacta y sin desperdiciar CPU.
+
 ### ⚠️ Cómo se diseñan los dispositivos IoT comerciales? 
 Un solo firmware, un botón físico para configurar, y la memoria no volátil (NVS) recordando la última configuración. Hay un secreto de la industria muy importante sobre cómo hacer esto en el ESP32: No intentes apagar el Wi-Fi y encender el Bluetooth "en caliente" (sin reiniciar).
 
