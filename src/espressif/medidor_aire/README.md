@@ -26,6 +26,10 @@ medidor_aire/
 │   │   ├── CMakeLists.txt
 │   │   ├── include/sensor_sgp30.h
 │   │   └── sensor_sgp30.c
+│   ├── red_wifi/           (El Consumidor Fijo)
+│   │   ├── CMakeLists.txt
+│   │   ├── include/red_wifi.h
+│   │   └── red_wifi.c
 ├── main/                       (El Director de Orquesta)
 │   ├── CMakeLists.txt
 │   └── medidor_aire_main.c     (Lee botón BOOT, lee NVS, y enciende el modo correcto)
@@ -137,6 +141,20 @@ EVENTO RECIBIDO -> CO2: 415 ppm          TVOC: 7 ppb
 ```
 
 ## Problemas y soluciones
+### ⚠️ La autopsia del Log (¿Qué pasó realmente?)
+El ESP32-C3 y tu SGP30 comparten la misma línea de alimentación de 3.3V.
+
+1. Durante los primeros 15 segundos, el Wi-Fi estaba apagado. El sensor hizo su "warmup" (calentamiento) perfectamente y empezó a medir.  
+2. En el segundo 15.1, el Director mandó encender la antena Wi-Fi.  
+3. En el segundo 16.6, el ESP32 empezó a transmitir ondas de radio a máxima potencia para negociar la contraseña con "Ariel's-Galaxy". Esto provoca un **pico de consumo de corriente brutal** (puede llegar a 300mA o 400mA en fracciones de segundo).  
+4. Como los cables de la protoboard son finos y tienen resistencia, ese tirón de corriente provocó una caída de voltaje momentánea (Brownout). Al ESP32 no le afectó, pero **el SGP30 se quedó sin energía una fracción de segundo y se reinició**.  
+5. Cuando el SGP30 se reinicia, olvida su calibración y necesita que le vuelvan a enviar el comando de inicialización (0x2003). Como tu tarea del SGP30 seguía pidiéndole datos a ciegas (0x2008), el sensor asustado respondía con un error (NACK), lo que se traduce en tu log como ESP\_FAIL cada 1 segundo.
+
+### La Solución: El Director debe organizar mejor los tiempos
+
+Para evitar que el pico de arranque del Wi-Fi mate al sensor, la regla de oro en IoT es: **Primero levanta las comunicaciones pesadas (Wi-Fi), deja que la energía se estabilice, y luego encendemos los sensores delicados.**  
+
+
 ### ⚠️ La cruda realidad (y cómo lo solucionan los profesionales)
 La documentación que encontraste sobre usar *solo* Timers y Eventos es ideal para cosas que se calculan rápido (como leer un pin digital o una variable). **Pero para leer buses de comunicación lentos y propensos a bloqueos como el I2C, meterlo dentro del Event Loop es un suicidio de código.** Por eso tu código original con el while(1) funcionaba como una roca. ¡Porque el while(1) vivía en su propia tarea aislada\! Si el I2C fallaba, solo esa tarea se pausaba, pero el sistema seguía vivo.  
 Vamos a hacer lo que se llama el **Patrón Productor-Consumidor**. Es la arquitectura definitiva:

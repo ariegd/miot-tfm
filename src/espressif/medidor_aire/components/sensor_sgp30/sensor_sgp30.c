@@ -91,7 +91,7 @@ void sensor_sgp30_start(void) {
     ESP_ERROR_CHECK(i2c_master_init());
 
     // Crear el Bucle de Eventos por defecto (La espina dorsal de tu app)
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    //ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // Registrar el handler para que escuche cuando haya datos
     ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, sensor_data_handler, NULL));
