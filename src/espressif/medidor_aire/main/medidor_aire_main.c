@@ -3,6 +3,7 @@
 #include "esp_event.h"
 #include "sensor_sgp30.h"
 #include "red_wifi.h"
+#include "red_ble.h"
 
 void app_main(void)
 {
@@ -12,9 +13,12 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // 2. Arrancar el componente Wi-Fi
-    red_wifi_start();
+    //red_wifi_start();
 
-    // 3. Arrancar el sensor (Este arranca SIEMPRE, no le importa la red)
+    // 3. ARRANCAR MODO BLE (Consumidor Portátil)
+    red_ble_start();
+
+    // 4. Arrancar el sensor (Este arranca SIEMPRE, no le importa la red)
     sensor_sgp30_start();
 
 
@@ -24,9 +28,9 @@ void app_main(void)
 
     // 4. Arrancar solo la red necesaria (EXCLUSIÓN MUTUA)
     if (modo_wifi) {
-        network_wifi_start();
+        red_wifi_start();
     } else {
-        network_ble_start();
+        red_ble_start();
     }
     */
 }

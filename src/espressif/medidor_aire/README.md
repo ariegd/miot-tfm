@@ -30,6 +30,14 @@ medidor_aire/
 │   │   ├── CMakeLists.txt
 │   │   ├── include/red_wifi.h
 │   │   └── red_wifi.c
+│   └── red_ble/            (El Consumidor Portátil)
+│   │   ├── CMakeLists.txt
+│   │   ├── idf_component.yml      (Pégalo tal cual, es vital para las dependencias)
+│   │   ├── Kconfig.projbuild      (Pégalo tal cual)
+│   │   ├── bleprph.h              (Pégalo tal cual, será interno del componente)
+│   │   ├── gatt_svr.c             (Pégalo tal cual, no hay que tocarlo)
+│   │   ├── include/red_ble.h
+│   │   └── red_ble.c
 ├── main/                       (El Director de Orquesta)
 │   ├── CMakeLists.txt
 │   └── medidor_aire_main.c     (Lee botón BOOT, lee NVS, y enciende el modo correcto)
@@ -114,10 +122,16 @@ idf.py -p /dev/ttyACM0 monitor
 ```
 
 2. Abrir el menu de configuración del proyecto (`idf.py menuconfig`).
-    i. Ve a Component `config` y presiona Enter.
-    ii. Baja hasta `ESP System Settings` y presiona Enter.
-    iii. Busca la opción que dice `Channel for console output` (probablemente esté puesta en `Default: UART0`). Presiona Enter.
-    vi. En la lista que aparece, selecciona `USB Serial/JTAG Controller` y presiona Enter.
+    a. Ve a Component `config` y presiona Enter.
+    b. Baja hasta `ESP System Settings` y presiona Enter.
+    c. Busca la opción que dice `Channel for console output` (probablemente esté puesta en `Default: UART0`). Presiona Enter.
+    d. En la lista que aparece, selecciona `USB Serial/JTAG Controller` y presiona Enter.
+    
+3. Como este ejemplo usa NimBLE, debemos asegurarnos de que el Bluetooth está activado en el sistema base de Espressif. Antes de compilar, ejecuta:
+idf.py menuconfig
+    a. Ve a `Component config -> Bluetooth`
+    b. Habilita `Bluetooth`.
+    c. En `Bluetooth Host`, asegúrate de que esté seleccionado `NimBLE - BLE only`.
 
 ### Construir y flashear
 Construya el proyecto y fórmelo en la placa, luego ejecute la herramienta de monitorización para ver la salida en serie:
