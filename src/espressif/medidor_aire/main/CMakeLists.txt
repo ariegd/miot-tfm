@@ -1,3 +1,4 @@
-idf_component_register(SRCS "medidor_aire.c"
-                       PRIV_REQUIRES spi_flash esp_event esp_timer
-                       INCLUDE_DIRS "")
+idf_component_register(SRCS "medidor_aire_main.c"
+                       PRIV_REQUIRES spi_flash
+                       INCLUDE_DIRS ""
+                       REQUIRES sensor_sgp30)

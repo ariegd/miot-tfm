@@ -16,6 +16,6 @@ dependencies:
 direct_dependencies:
 - chiehmin/sgp30
 - idf
-manifest_hash: 23e28e983346ea39847902c3fc0970e04cd607d1f708ecfe69f611db75779e43
+manifest_hash: 7738e51decc852fe6f31096c93cf44203819c756b15f85d56faecb8b8772bb6e
 target: esp32c3
 version: 2.0.0

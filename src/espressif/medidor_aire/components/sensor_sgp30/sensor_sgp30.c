@@ -7,6 +7,7 @@
 #include "esp_event.h"
 #include "driver/i2c.h"
 #include "sgp30/sgp30.h"
+#include "sensor_sgp30.h"
 
 #define I2C_MASTER_SDA_IO           4
 #define I2C_MASTER_SCL_IO           5
@@ -85,7 +86,7 @@ void sgp30_task(void *pvParameters) {
 // ---------------------------------------------------------
 // FUNCIÓN PRINCIPAL
 // ---------------------------------------------------------
-void app_main(void) {
+void sensor_sgp30_start(void) {
     ESP_LOGI(TAG, "Iniciando sistema... Configurando I2C.");
     ESP_ERROR_CHECK(i2c_master_init());
 

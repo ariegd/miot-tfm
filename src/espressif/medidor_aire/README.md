@@ -19,16 +19,17 @@ Se basa en tres pilares:
 A continuación se muestra una explicación de los archivos en la carpeta del proyecto `gatts_touch`.
 
 ```
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── medidor_aire.c
-├── pytest_hello_world.py
-├── README.md
-├── sdkconfig
-├── sdkconfig.ci
-├── sdkconfig.defaults
-└── sdkconfig.old
+medidor_aire/
+├── CMakeLists.txt              (El CMake global del proyecto)
+├── components/
+│   ├── sensor_sgp30/           (El Productor)
+│   │   ├── CMakeLists.txt
+│   │   ├── include/sensor_sgp30.h
+│   │   └── sensor_sgp30.c
+├── main/                       (El Director de Orquesta)
+│   ├── CMakeLists.txt
+│   └── medidor_aire_main.c     (Lee botón BOOT, lee NVS, y enciende el modo correcto)
+└── sdkconfig
 ```
 
 ## Visualizando la Máquina de Estados Finitos (FSM)
@@ -122,20 +123,15 @@ Ejecute `idf.py -p PORT flash monitor` para compilar, actualizar y monitorear el
 ## Ejemplo de Salida
 ```
 ...
-CO2: 406 ppm    TVOC: 3 ppb
-CO2: 400 ppm    TVOC: 0 ppb
-CO2: 411 ppm    TVOC: 0 ppb
-CO2: 403 ppm    TVOC: 0 ppb
-CO2: 404 ppm    TVOC: 0 ppb
-CO2: 400 ppm    TVOC: 0 ppb
-CO2: 418 ppm    TVOC: 7 ppb
-CO2: 406 ppm    TVOC: 0 ppb
-CO2: 413 ppm    TVOC: 2 ppb
-CO2: 414 ppm    TVOC: 2 ppb
-CO2: 405 ppm    TVOC: 0 ppb
-CO2: 412 ppm    TVOC: 3 ppb
-CO2: 405 ppm    TVOC: 0 ppb
-CO2: 400 ppm    TVOC: 0 ppb
+EVENTO RECIBIDO -> CO2: 400 ppm          TVOC: 0 ppb
+EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 4 ppb
+EVENTO RECIBIDO -> CO2: 420 ppm          TVOC: 6 ppb
+EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 7 ppb
+EVENTO RECIBIDO -> CO2: 411 ppm          TVOC: 7 ppb
+EVENTO RECIBIDO -> CO2: 429 ppm          TVOC: 12 ppb
+EVENTO RECIBIDO -> CO2: 418 ppm          TVOC: 12 ppb
+EVENTO RECIBIDO -> CO2: 412 ppm          TVOC: 3 ppb
+EVENTO RECIBIDO -> CO2: 415 ppm          TVOC: 7 ppb
 ...
 
 ```
