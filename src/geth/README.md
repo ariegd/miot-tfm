@@ -1,7 +1,8 @@
 | Supported Targets | Raspberry-Pi4 | Linux |
 | ----------------- | ------------- | ----- |
 
-<img width="571" height="639" alt="Image" src="https://github.com/user-attachments/assets/0f2555e4-00cb-4c86-b136-9e3e796b92b8" />
+<img width="371" height="439" alt="Image" src="https://github.com/ariegd/miot-tfm/blob/geth/src/geth/img/20260410_094412.jpg" />
+
 
 # Objetivo red privada go-ethereum
 * Crear una red blockchain compartida entre las diferentes RPis y ejecutar un smart contract básico. Es decir, geth en cada RPi y en un ordenador, y un smart contract simple en Solidity para poder enviar transacciones con los valores de CO2.
@@ -86,6 +87,7 @@ stateDiagram-v2
 * Portátil o ordenador mesa
 * Dongle WiFi (opcional)
 
+<img width="371" height="439" alt="Image" src="https://github.com/ariegd/miot-tfm/blob/geth/src/geth/img/1775732450744.jpeg" />
 
 ## Configuración del proyecto antes de puesta en marcha.
 Se asume que ya la instalación de geth 1.13.15 y archivos correspondientes como genesis.json. Se encuentran instalados en cada nodo de red privada blockchain. Entoces, para cada nodo de la red privada blockchain:
