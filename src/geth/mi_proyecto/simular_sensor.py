@@ -1,7 +1,7 @@
 import time
 import random
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 
 # 1. Conexión al nodo Geth local
 # Usamos localhost porque este script corre en la misma máquina que el nodo
@@ -9,7 +9,7 @@ w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
 # Inyectar el middleware de PoA (Proof of Authority - Clique)
 # Esto es OBLIGATORIO en redes privadas como la tuya, si no, fallarán las transacciones
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
 if not w3.is_connected():
     print("❌ Error: No se pudo conectar a Geth. ¿Está el nodo arrancado con el puerto 8545 abierto?")
