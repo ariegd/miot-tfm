@@ -268,15 +268,13 @@ ImportError: cannot import name 'geth_poa_middleware' from 'web3.middleware' (/h
 ### ⚠️ Configuración y arranque desde WiFi Móvil
 ```
 # Debian (Bootnode) 
-geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.116 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --unlock "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
-
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.116 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --unlock "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*" --nodiscover --bootnodes ""
 
 # rpi-node1
-geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.143 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --unlock "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
-
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.143 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --unlock "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*" --nodiscover --bootnodes ""
 
 # rpi-node2
-geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.199 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --unlock "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.199 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --unlock "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*" --nodiscover --bootnodes ""
 
 # arrancar
 geth attach ./nodo/geth.ipc
