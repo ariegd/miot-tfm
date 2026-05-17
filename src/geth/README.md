@@ -225,21 +225,49 @@ admin.addPeer("enode://e96a...@<IP_NODO>:30303")
 
 ```
 
-## Ejemplo de Salida
+## Ejemplo de Salida de un nodo
 ```
 ...
-I (134290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 20 ppb
-I (135290) NimBLE: [BLE] Dato listo para notificar -> CO2: 413 ppm | TVOC: 26 ppb
-I (136290) NimBLE: [BLE] Dato listo para notificar -> CO2: 406 ppm | TVOC: 28 ppb
-I (137290) NimBLE: [BLE] Dato listo para notificar -> CO2: 400 ppm | TVOC: 20 ppb
-I (138290) NimBLE: [BLE] Dato listo para notificar -> CO2: 405 ppm | TVOC: 21 ppb
-I (139290) NimBLE: [BLE] Dato listo para notificar -> CO2: 416 ppm | TVOC: 24 ppb
-I (140290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 23 ppb
+alhash=f2d479..bc303f txs=0 gas=0       fees=0           elapsed="910.928µs"
+INFO [05-17|19:05:07.570] Imported new chain segment               number=161 hash=1341b6..db4f4b blocks=1 txs=0 mgas=0.000 elapsed=96.474ms    mgasps=0.000 snapdiffs=279.00B triedirty=779.00B
+INFO [05-17|19:05:07.571] Commit new sealing work                  number=162 sealhash=262cb3..92e02f txs=0 gas=0       fees=0           elapsed="526.852µs"
+INFO [05-17|19:05:12.093] Successfully sealed new block            number=162 sealhash=262cb3..92e02f hash=e710ee..634728 elapsed=4.522s
+INFO [05-17|19:05:12.095] Commit new sealing work                  number=163 sealhash=12f0bc..7b71ea txs=0 gas=0       fees=0           elapsed=1.562ms
+WARN [05-17|19:05:12.095] Block sealing failed                     err="signed recently, must wait for others"
+INFO [05-17|19:05:12.201] Looking for peers                        peercount=2 tried=21 static=2
+INFO [05-17|19:05:17.127] Imported new chain segment               number=163 hash=3717b3..689a14 blocks=1 txs=0 mgas=0.000 elapsed=96.895ms    mgasps=0.000 snapdiffs=279.00B triedirty=779.00B
+INFO [05-17|19:05:17.128] Commit new sealing work                  number=164 sealhash=deb0ea..588ce6 txs=0 gas=0       fees=0           elapsed=1.055ms
 ...
 
 ```
 
 ## Problemas y soluciones
+### ⚠️ Configuración y arranque desde WiFi Móvil
+´´´
+# Debian (Bootnode) 
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.116 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --unlock "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
+
+
+# rpi-node1
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.143 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --unlock "0xEcCb21cFdC06b8777642d83904D49c96e4E929Cc" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
+
+
+# rpi-node2
+geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:10.114.27.199 --allow-insecure-unlock --password password.txt --mine --miner.etherbase "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --unlock "0xB7523Cb4d56A13F9919b7B582070A73d9e8c92C2" --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal,miner" --http.corsdomain "*"
+
+# arrancar
+geth attach ./nodo/geth.ipc
+
+# Debian
+admin.addPeer("enode://6445315e57f87383bdd2158bcf5642886e2bd39df07a5b8db2055f163bcc7224be7a2219c0b6abdf3624cea31070d6b9aa1a03a956db7c9e7b90026c3781f48e@10.114.27.116:30303")
+
+# Rpi-1
+admin.addPeer("enode://b1cb946980472e067f3e5e971814a65453a1749219caf21277b885c62e987f4a08e26674a116e3b093eb1834f4dedc7980e0d9ab9f95d1cad66d3c8f1eba73e0@10.114.27.143:30303")
+
+# Rpi-2
+admin.addPeer("enode://83ef2a7151b66881751e78f75c4462778baff9b39d9a6fed037a3f19d37427d658c79800c88ef3b6bdd46de2b05e7d1cc5bbb8322aa8ced0c0d486deca045689@10.114.27.199:30303")
+´´´
+
 ### ⚠️ Ayuda en la terminal
 ```
 # Reiniciar o apaga linux
