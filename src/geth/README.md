@@ -181,6 +181,27 @@ pip install web3 py-solc-x
 
 ```
 
+6. Orden de ejecución de los script de Python
+```
+1. Ejecutar el servidor CoAP en el nodo RPis
+(venv) usuario@rpi-nodo1:~/mi_proyecto $ python3 nodo_fog_coap.py
+📡 Servidor Fog CoAP iniciado. Escuchando en el puerto 5683 (UDP)...
+📥 [FOG] Dato recibido vía CoAP: 662 ppm. Buffer: 1/5
+📥 [FOG] Dato recibido vía CoAP: 399 ppm. Buffer: 2/5
+📥 [FOG] Dato recibido vía CoAP: 593 ppm. Buffer: 3/5
+📥 [FOG] Dato recibido vía CoAP: 649 ppm. Buffer: 4/5
+📥 [FOG] Dato recibido vía CoAP: 505 ppm. Buffer: 5/5
+📊 [FOG] Umbral alcanzado. Promedio calculado: 561
+
+2. Ejecutar varios simuladores cliente CoAP
+(venv) zodd@debian:~/mi_proyecto$ python3 simular_sensor.py
+🚀 Iniciando ESP32 Simulado (CoAP) enviando a coap://10.114.27.143/co2...
+[23:17:25] ⬆️ Enviado: 662 ppm | ⬇️ Respuesta Fog: 2.01 Created
+[23:17:27] ⬆️ Enviado: 399 ppm | ⬇️ Respuesta Fog: 2.01 Created
+[23:17:29] ⬆️ Enviado: 593 ppm | ⬇️ Respuesta Fog: 2.01 Created
+[23:17:31] ⬆️ Enviado: 649 ppm | ⬇️ Respuesta Fog: 2.01 Created
+```
+
 ## Levantar la red privada blockchain P2P
 1. Conectar mediante SSH a los nodos RPis
 ```
