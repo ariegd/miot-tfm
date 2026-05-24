@@ -185,17 +185,17 @@ pip install web3 py-solc-x
 ```
 1. Ejecutar el servidor CoAP en el nodo RPis
 (venv) usuario@rpi-nodo1:~/mi_proyecto $ python3 nodo_fog_coap.py
-📡 Servidor Fog CoAP iniciado. Escuchando en el puerto 5683 (UDP)...
-📥 [FOG] Dato recibido vía CoAP: 662 ppm. Buffer: 1/5
-📥 [FOG] Dato recibido vía CoAP: 399 ppm. Buffer: 2/5
-📥 [FOG] Dato recibido vía CoAP: 593 ppm. Buffer: 3/5
-📥 [FOG] Dato recibido vía CoAP: 649 ppm. Buffer: 4/5
-📥 [FOG] Dato recibido vía CoAP: 505 ppm. Buffer: 5/5
-📊 [FOG] Umbral alcanzado. Promedio calculado: 561
+Servidor Fog CoAP iniciado. Escuchando en el puerto 5683 (UDP)...
+[FOG] Dato recibido vía CoAP: 662 ppm. Buffer: 1/5
+[FOG] Dato recibido vía CoAP: 399 ppm. Buffer: 2/5
+[FOG] Dato recibido vía CoAP: 593 ppm. Buffer: 3/5
+[FOG] Dato recibido vía CoAP: 649 ppm. Buffer: 4/5
+[FOG] Dato recibido vía CoAP: 505 ppm. Buffer: 5/5
+[FOG] Umbral alcanzado. Promedio calculado: 561
 
 2. Ejecutar varios simuladores cliente CoAP
 (venv) zodd@debian:~/mi_proyecto$ python3 simular_sensor.py
-🚀 Iniciando ESP32 Simulado (CoAP) enviando a coap://10.114.27.143/co2...
+Iniciando ESP32 Simulado (CoAP) enviando a coap://10.114.27.143/co2...
 [23:17:25] ⬆️ Enviado: 662 ppm | ⬇️ Respuesta Fog: 2.01 Created
 [23:17:27] ⬆️ Enviado: 399 ppm | ⬇️ Respuesta Fog: 2.01 Created
 [23:17:29] ⬆️ Enviado: 593 ppm | ⬇️ Respuesta Fog: 2.01 Created
@@ -262,6 +262,20 @@ INFO [05-17|19:05:17.128] Commit new sealing work                  number=164 se
 ```
 
 ## Problemas y soluciones
+### **Lógica ahora que las RPis corren Geth**
+
+1. **Conexión Local (127.0.0.1):** El script de Python nodo\_fog\_coap.py que corre dentro de rpi-node1 ya no necesita conectarse remotamente a Debian. Se conectará a su propio Geth local a través de localhost (127.0.0.1:8545). Lo mismo para rpi-node2.  
+2. **Cuentas Nativas:** Como cada nodo Geth fue arrancado desbloqueando su propia cuenta minera específica (0xEcCb... en la RPi 1 y 0xB752... en la RPi 2), el script de Python simplemente llamará a w3.eth.accounts\[0\] en su propia máquina. Geth se encargará de firmar localmente con su clave privada autorizada.  
+3. **Propagación P2P:** Cuando el script CoAP de la rpi-node1 envíe una transacción a su Geth local, ese Geth la propagará automáticamente por la red P2P (puerto 30303\) hacia Debian y hacia la rpi-node2 para que sea minada e incluida en el siguiente bloque.
+
+#### **Los Simuladores de Sensores (simular\_sensor.py)**
+
+Corren en tu PC o en cualquier parte y apuntan a las IPs físicas de tus Raspberry Pis:
+
+* Para atacar a la RPi 1: \`python3 simular\_sensor.py 10.114.27.143\`  
+* Para atacar a la RPi 2: \`python3 simular\_sensor.py 10.114.27.199\`
+
+
 ### ⚠️ Error al lanzar el `simular_sensor.py`
 **Solución**
 ```
