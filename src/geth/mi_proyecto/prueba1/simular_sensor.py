@@ -19,10 +19,10 @@ async def enviar_dato(context, valor_co2):
         response = await context.request(request).response
         print(f"[{time.strftime('%H:%M:%S')}] Enviado: {valor_co2} ppm | Respuesta Fog: {response.code}")
     except Exception as e:
-        print(f" Error al enviar dato: {e}")
+        print(f"Error al enviar dato: {e}")
 
 async def main():
-    print(f" Iniciando ESP32 Simulado (CoAP) enviando a {URI_COAP}...")
+    print(f"Iniciando ESP32 Simulado (CoAP) enviando a {URI_COAP}...")
     protocol = await Context.create_client_context()
     
     try:
@@ -33,7 +33,7 @@ async def main():
             await asyncio.sleep(2) 
             
     except KeyboardInterrupt:
-        print("\n Simulación detenida.")
+        print("\nSimulación detenida.")
 
 if __name__ == "__main__":
     asyncio.run(main())

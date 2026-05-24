@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import json
 from aiocoap import Message, Code
 from aiocoap.resource import Resource, Site
 import aiocoap
@@ -12,12 +11,9 @@ w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
 # ¡ATENCIÓN! Actualiza con tus datos reales
-DIRECCION_CONTRATO = "0xA1Be5B5E6DaBfccA46B96457E03C1160725D3E41"
+DIRECCION_CONTRATO = "0xTU_DIRECCION_DEL_CONTRATO"
 CUENTA_FOG = w3.eth.accounts[0]
 ABI = [...] # Pega aquí tu ABI
-# 2. MODIFICA ESTA PARTE: Lee el archivo físico abi.json automáticamente
-with open("abi.json", "r") as file:
-    ABI = json.load(file)
 
 contrato = w3.eth.contract(address=DIRECCION_CONTRATO, abi=ABI)
 
