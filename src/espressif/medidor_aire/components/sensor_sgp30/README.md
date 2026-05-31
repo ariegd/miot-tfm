@@ -120,3 +120,4 @@ El más destacado en el ESP Component Registry es:
 En tu módulo hay un pin marcado como 1V8. Mucha gente se confunde y piensa que hay que meterle 1.8V por ahí. En realidad, en estos módulos comerciales, ese pin es una salida. Es el voltaje de 1.8V que el regulador interno de la placa está generando. Se deja ahí por si el usuario necesita alimentar otro pequeño componente a 1.8V, pero tú puedes ignorarlo por completo.
 
 La conversión de 3.3V a 1.8V se hace automáticamente de forma invisible para ti. Así que puedes conectar VIN al 3V3 de tu ESP32-C3 y los pines SDA/SCL de forma directa con total tranquilidad.
+

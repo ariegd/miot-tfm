@@ -40,14 +40,21 @@ Una de las decisiones más críticas en el despliegue de nodos industriales o co
 * **Opción C: Derivación por Dirección MAC**: El código genera un algoritmo donde el PIN de emparejamiento se calcula a partir de los últimos bytes de la dirección MAC física y única del silicio de Espressif, evitando que viaje información sensible de configuración.  
 * **Opción D: Vinculación Fuera de Banda (OOB)**: Uso de códigos QR impresos en el chasis del dispositivo que el usuario escanea con el móvil para intercambiar las claves criptográficas iniciales de manera 100% segura.
 
-## 4. Bitácora de Errores y Soluciones Técnicas
+## 4. Registro de Errores y Soluciones Técnicas
 
-### **Problema 1: Latencia y Desfase en el Reloj del Sensor (1Hz Jitter)**
+### Problema 1: Latencia y Desfase en el Reloj del Sensor (1Hz Jitter)
 
 * **Causa:** Si el stack de radio de Bluetooth se inicializa simultáneamente con el bucle de lectura del sensor SGP30, las ráfagas de consumo eléctrico y la asignación de memoria del controlador de radio pueden retrasar temporalmente la ejecución de los timers por software. El SGP30 requiere una consulta matemática estricta a **1Hz exacto** para que sus algoritmos internos de calibración (*baseline*) no se corrompan.  
 * **Solución:** Priorizar el arranque en el hilo principal (medidor\_aire\_main.c). La pila inalámbrica BLE se inicializa primero, y una vez que el host de NimBLE reporta estabilidad, se arranca de manera aislada el temporizador del sensor, garantizando que su intervalo de muestreo sufra de cero latencias.
 
-### **Problema 2: El Cliente BLE pierde la conexión tras unos minutos de inactividad**
+### Problema 2: El Cliente BLE pierde la conexión tras unos minutos de inactividad
 
 * **Causa:** Los teléfonos móviles modernos (iOS/Android) desconectan agresivamente los periféricos BLE si el nodo IoT solicita parámetros de conexión (*Connection Parameters*) muy lentos o si no responde a los eventos de supervisión (*Supervision Timeout*) debido a bloqueos en otras tareas del sistema.  
 * **Solución:** Configurar adecuadamente los intervalos de conexión mínimos y máximos en el host de NimBLE a través de menuconfig (Component config \-\> Bluetooth \-\> NimBLE Options), asegurando rangos de entre 20ms y 40ms, ideales para transmisiones continuas de sensores cada segundo.
+
+---
+
+### ¿Por qué esta estructura es ideal para tu componente BLE?
+1. **Justificación del diseño**: Deja claro por qué elegiste NimBLE sobre Bluedroid (un punto excelente para defender en cualquier evaluación técnica o memoria).
+2. **Claridad del formato**: Documenta el String exacto de telemetría que expone el nodo, facilitando la integración a cualquiera que desarrolle la aplicación móvil cliente.
+3. **Visión industrial**: La sección de seguridad demuestra que el proyecto no es un simple juguete de Arduino, sino que contempla metodologías de despliegue IoT reales y profesionales.

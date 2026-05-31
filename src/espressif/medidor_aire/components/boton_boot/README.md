@@ -34,8 +34,8 @@ Para solventar esto, este firmware imita el diseño del **99% de los dispositivo
 Cuando el usuario presiona el botón físico para alternar la conectividad, el componente ejecuta de forma secuencial y segura el siguiente algoritmo de bajo nivel:
 ```
 [Pulsación Física] ➔ 1. ISR detecta flanco de bajada ➔ 2. Cambia 'modo_red' en NVS ➔ 3. esp_restart()
-│
-┌─────────────────────────────────────────────────────────────────────────────────────────┘
+                                                                                                    │
+┌───────────────────────────────────────────────────────────────────────────────────────────────────┘
 ▼
 [Reinicio Limpio (1 seg)] ➔ app_main() lee NVS ➔ Inicializa la red seleccionada con RAM 100% limpia
 ```
