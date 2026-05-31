@@ -83,10 +83,3 @@ Jan 01 00:03:50.229 EMRG libcoap not compiled for DTLS with Mbed TLS - update Mb
 * Causa: libcoap emite una alerta de nivel Emergency indicando que el componente no ha sido compilado con capas de seguridad criptográfica para datagramas (CoAPS).
 
 * Impacto: Ninguno para el prototipo de laboratorio actual. Al tratarse de una red local privada y controlada, prescindir de la sobrecarga computacional de DTLS permite mantener el firmware del ESP32-C3 ligero, rápido y estable.
-
----
-
-### Beneficios de esta estructura:
-1. **Justificación de Diseño Clara**: Explica de manera científica y estructurada por qué se migró de MQTT a CoAP, lo cual es de gran valor para la memoria técnica de tu proyecto.
-2. **Documentación del Formato**: Al especificar que el payload es texto plano (`text/plain`) y que la URI-Path es `/co2`, cualquier desarrollador puede entender la integración con la Raspberry Pi sin necesidad de descifrar líneas de código en C.
-3. **Explicación del Flujo Libre de Errores**: Deja documentado el porqué de la solución con la tarea *Worker* de FreeRTOS, demostrando un control avanzado de los recursos de tiempo real del chip.
