@@ -1,0 +1,2 @@
+source /home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire/build/bootloader/gdbinit/symbols
+source /home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire/build/bootloader/gdbinit/connect

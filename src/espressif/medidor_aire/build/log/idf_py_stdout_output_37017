@@ -1,0 +1,12 @@
+Command: ninja all
+[0/1] Re-running CMake...
+-- Minimal build - ON
+-- Building ESP-IDF components for target esp32c3
+NOTICE: Processing 3 dependencies:
+NOTICE: [1/3] chiehmin/sgp30 (1.0.0)
+NOTICE: [2/3] espressif/mqtt (1.0.0)
+NOTICE: [3/3] idf (5.5.0)
+NOTICE: espressif__mqtt overrides mqtt since "project_managed_components" type got higher priority than "idf_components"
+-- Configuring incomplete, errors occurred!
+FAILED: build.ninja 
+/usr/bin/cmake --regenerate-during-build -S/home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire -B/home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire/build

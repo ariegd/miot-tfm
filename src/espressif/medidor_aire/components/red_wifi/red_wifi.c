@@ -1,4 +1,6 @@
 #include <string.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -7,79 +9,123 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "red_wifi.h"
-#include "mqtt_client.h"
 #include "sensor_sgp30.h"
 
-// Macros heredadas de tu Kconfig
+// Componente CoAP nativo de ESP-IDF
+#include "coap3/coap.h"
+
+// Macros heredadas de tu Kconfig para Wi-Fi
 #define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
 #define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
 #define EXAMPLE_ESP_MAXIMUM_RETRY  CONFIG_ESP_MAXIMUM_RETRY
 
-// (Omito las macros de seguridad WPA3/WEP por brevedad, pero puedes pegarlas aquí tal cual estaban en el original)
+// Configuración de red del Servidor CoAP (Gateway / Fog Node)
+#define COAP_SERVER_IP             "192.168.1.43"  // Reemplaza por la IP real de tu Raspberry Pi
+#define COAP_SERVER_PORT           "5683"           // Puerto UDP estándar de CoAP
 
 static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi_comp";
+static const char *TAG = "wifi_coap_client";
 static int s_retry_num = 0;
 
-// Variable global para el cliente MQTT dentro de este archivo
-static esp_mqtt_client_handle_t mqtt_client = NULL;
+// Contexto y sesión persistente UDP de CoAP
+static coap_context_t *coap_ctx = NULL;
+static coap_session_t *coap_session = NULL;
 
-// Handler para gestionar los eventos propios del protocolo MQTT
-static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    esp_mqtt_event_handle_t event = event_data;
-    switch ((esp_mqtt_event_id_t)event_id) {
-        case MQTT_EVENT_CONNECTED:
-            ESP_LOGI(TAG, "MQTT Conectado al broker exitosamente");
-            break;
-        case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGW(TAG, "MQTT Desconectado del broker");
-            break;
-        case MQTT_EVENT_PUBLISHED:
-            ESP_LOGI(TAG, "MQTT Mensaje publicado (msg_id=%d)", event->msg_id);
-            break;
-        case MQTT_EVENT_ERROR:
-            ESP_LOGE(TAG, "MQTT Error crítico");
-            break;
-        default:
-            break;
+// Inicializa el entorno e hilos de red para CoAP sobre UDP
+static void coap_client_start(void) {
+    ESP_LOGI(TAG, "Configurando sesión cliente CoAP hacia [%s:%s]...", COAP_SERVER_IP, COAP_SERVER_PORT);
+    
+    coap_address_t dst_addr;
+    struct addrinfo hints, *res;
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM; // Protocolo UDP obligatorio para CoAP estándar
+
+    if (getaddrinfo(COAP_SERVER_IP, COAP_SERVER_PORT, &hints, &res) != 0) {
+        ESP_LOGE(TAG, "Error: No se pudo resolver la dirección IP del Servidor CoAP");
+        return;
     }
+
+    coap_address_init(&dst_addr);
+    dst_addr.size = res->ai_addrlen;
+    memcpy(&dst_addr.addr, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
+
+    // Crear el contexto global del stack libcoap
+    coap_ctx = coap_new_context(NULL);
+    if (!coap_ctx) {
+        ESP_LOGE(TAG, "Error al crear el contexto de CoAP");
+        return;
+    }
+
+    // Establecer la sesión cliente UDP sin encriptación (CoAP estándar)
+    coap_session = coap_new_client_session(coap_ctx, NULL, &dst_addr, COAP_PROTO_UDP);
+    if (!coap_session) {
+        ESP_LOGE(TAG, "Fallo al conectar la sesión UDP con el Gateway");
+        coap_free_context(coap_ctx);
+        coap_ctx = NULL;
+        return;
+    }
+
+    ESP_LOGI(TAG, "Cliente CoAP inicializado y listo para transmitir.");
 }
 
-// Función para inicializar el cliente MQTT
-static void mqtt_app_start(void) {
-    esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = "mqtt://test.mosquitto.org", // Broker público para pruebas
-    };
-
-    ESP_LOGI(TAG, "Iniciando cliente MQTT...");
-    mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
-    esp_mqtt_client_start(mqtt_client);
-}
-
-// 1. Crear el handler específico para Wi-Fi
+// Handler reactivo: Se dispara cada vez que el SGP30 publica una lectura en el event loop
 static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int32_t id, void* event_data) {
     if (base == SENSOR_EVENT_BASE && id == SENSOR_EVENT_DATA_READY) {
         sgp30_data_t* data = (sgp30_data_t*)event_data;
-        ESP_LOGI(TAG, "[WI-FI] Dato listo para enviar -> CO2: %d ppm | TVOC: %d ppb", data->co2, data->tvoc);
-
-        // ¡Aquí enviaremos el dato por MQTT, HTTP, Websockets, etc!
-        if (mqtt_client != NULL) {
-            char payload[64];
-            // Formateamos el string en formato JSON tal como recomiendan las notas de Espressif
-            snprintf(payload, sizeof(payload), "{\"co2eq\":%d,\"tvoc\":%d}", data->co2, data->tvoc);
-
-            // Publicamos: Topic, Payload, Longitud(0=auto), QoS(1), Retain(0)
-            int msg_id = esp_mqtt_client_publish(mqtt_client, "/sensor/sgp30/telemetria", payload, 0, 1, 0);
-            ESP_LOGI(TAG, "[WI-FI] Dato enviado por MQTT (msg_id=%d) -> %s", msg_id, payload);
+        
+        if (coap_session == NULL) {
+            ESP_LOGW(TAG, "Envío CoAP cancelado: la sesión no está lista.");
+            return;
         }
+
+        // Formateamos el payload estrictamente como texto plano del entero de CO2
+        // para cumplir con la línea: valor_co2 = int(request.payload.decode('utf-8')) del servidor
+        char payload[16];
+        snprintf(payload, sizeof(payload), "%d", data->co2);
+
+        /* Creación del PDU CoAP:
+           - Usamos COAP_MESSAGE_NON (Mensaje No Confirmable): Ideal para telemetría continua (1s) 
+             porque evita sobrecargar el canal esperando ACKs.
+           - Método: COAP_REQUEST_POST
+        */
+        coap_pdu_t *pdu = coap_new_pdu(COAP_MESSAGE_NON, COAP_REQUEST_POST, coap_session);
+        if (!pdu) {
+            ESP_LOGE(TAG, "Imposible generar un nuevo PDU CoAP");
+            return;
+        }
+
+        // Registrar la Uri-Path. Equivale a apuntar a: coap://<IP>/co2
+        coap_add_option(pdu, COAP_OPTION_URI_PATH, 3, (const uint8_t *)"co2");
+
+        // Añadir cabecera Content-Format: text/plain (ID: 0 según IANA)
+        uint8_t opt_buf[4];
+        coap_add_option(pdu, COAP_OPTION_CONTENT_FORMAT,
+                        coap_encode_var_safe(opt_buf, sizeof(opt_buf), COAP_MEDIATYPE_TEXT_PLAIN),
+                        opt_buf);
+
+        // Adjuntar los datos medidos al paquete
+        coap_add_data(pdu, strlen(payload), (const uint8_t *)payload);
+
+        // Envío asíncrono del datagrama por la red
+        coap_mid_t mid = coap_send(coap_session, pdu);
+        if (mid == COAP_INVALID_MID) {
+            ESP_LOGE(TAG, "Fallo en la transmisión del paquete CoAP");
+        } else {
+            ESP_LOGI(TAG, "[CoAP POST] Enviado con éxito (mid=%d) -> CO2: %s ppm", mid, payload);
+        }
+
+        // Despachar el ciclo interno de Entrada/Salida de libcoap sin bloquear la tarea
+        coap_io_process(coap_ctx, COAP_IO_NO_WAIT);
     }
 }
 
-// El Handler Asíncrono (Exactamente igual que el original)
+// Manejador del ciclo de vida de la conexión Wi-Fi (Conservado intacto)
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
@@ -91,20 +137,19 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        ESP_LOGI(TAG,"Fallo al conectar al AP");
+        ESP_LOGI(TAG, "Fallo al conectar al AP");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "IP obtenida:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "IP obtenida: " IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
-// Nuestra función pública
+// Inicialización del subsistema de red inalámbrica
 void red_wifi_start(void) {
     s_wifi_event_group = xEventGroupCreate();
 
-    // ESTO SÍ ES DEL COMPONENTE:
     esp_netif_create_default_wifi_sta();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -119,37 +164,27 @@ void red_wifi_start(void) {
         .sta = {
             .ssid = EXAMPLE_ESP_WIFI_SSID,
             .password = EXAMPLE_ESP_WIFI_PASS,
-            // .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD, // (Añadir si usas las macros WPA3 completas)
         },
     };
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "Antena Wi-Fi iniciada. Esperando conexión...");
 
-    // Opcional: Esperar a que conecte o falle para avisar al main
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-    /*
+
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
-    } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID:%s", EXAMPLE_ESP_WIFI_SSID);
-    }
-    */
+        ESP_LOGI(TAG, "¡Conectado exitosamente al SSID: %s!", EXAMPLE_ESP_WIFI_SSID);
 
-    // 2. Dentro de tu función red_wifi_start(void), justo al final (después de comprobar que tienes IP):
-    if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "¡Conectado exitosamente al SSID:%s!", EXAMPLE_ESP_WIFI_SSID);
+        // 1. Iniciamos la sesión persistente hacia el servidor CoAP de la RPi
+        coap_client_start();
 
-        // 1. Arrancamos el cliente MQTT
-        mqtt_app_start();
-
-        // 3. Registramos el handler AL ESTAR CONECTADOS
+        // 2. Registramos el manejador en el bus de eventos global para procesar los datos listos del SGP30
         ESP_ERROR_CHECK(esp_event_handler_register(SENSOR_EVENT_BASE, SENSOR_EVENT_DATA_READY, wifi_telemetry_handler, NULL));
 
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID:%s", EXAMPLE_ESP_WIFI_SSID);
+        ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID: %s", EXAMPLE_ESP_WIFI_SSID);
     }
 }
