@@ -3,19 +3,40 @@
 
 <img width="571" height="639" alt="Image" src="https://github.com/user-attachments/assets/0f2555e4-00cb-4c86-b136-9e3e796b92b8" />
 
-# Objetivo del nodo `medidor_aire`
-```
-Comportarse como un nodo que realiza lectura de eCO2 y TVOC. SGP30 Air Quality Sensor Component para ESP-IDF.
-```
+# Nodo Medidor de Aire (`medidor_aire`)
 
-## Tareas en ejecución
-Se basa en tres pilares:
+Este firmware convierte al SoC ESP32-C3 en un nodo inteligente de adquisición de datos ambientales (eCO2 y TVOC) integrado en una arquitectura multinivel Edge-to-Fog mediante CoAP y BLE.
 
-1. **esp\_event\_loop**: Es el cerebro. El sistema se queda dormido y solo se "despierta" cuando un evento (un timer que expira) llega a este bucle principal.  
-2. **Temporizadores por Software (esp\_timer)**: Usamos timers nativos de Espressif en lugar de delays. No consumen RAM de tareas adicionales.  
-3. **FSM y Manejador de Eventos**: Un "motor" que mira el estado actual, el evento que acaba de llegar, y decide qué acción tomar y a qué estado cambiar.
+## Índice de Contenidos
+* [1. Objetivo del Nodo](#1-objetivo-del-nodo)
+* [2. Arquitectura y Tareas en Ejecución](#2-arquitectura-y-tareas-en-ejecución)
+* [3. Estructura del Directorio del Proyecto](#3-estructura-del-directorio-del-proyecto)
+* [4. Máquina de Estados Finitos (FSM)](#4-máquina-de-estados-finitos-fsm)
+* [5. Hardware Requerido y Cableado](#5-hardware-requerido-y-cableado)
+* [6. Configuración del Proyecto (Menuconfig)](#6-configuración-del-proyecto-menuconfig)
+* [7. Construcción, Flasheo y Monitorización](#7-construcción-flasheo-y-monitorización)
+* [8. Ejemplo de Salida en Consola](#8-ejemplo-de-salida-en-consola)
+* [9. Diccionario de Errores por Componente](#9-diccionario-de-errores-por-componente)
 
-## Directorio del proyecto
+---
+
+## 1. Objetivo del Nodo
+
+Comportarse como un nodo que realiza lectura de eCO2 y TVOC utilizando el SGP30 Air Quality Sensor Component para ESP-IDF.
+
+---
+
+## 2. Arquitectura y Tareas en Ejecución
+El diseño del firmware es completamente reactivo y agnóstico, basándose en tres pilares para optimizar el uso de energía y RAM:
+
+1. **`esp_event_loop`**: Es el cerebro. El sistema permanece en bajo consumo y solo se "despierta" cuando un evento específico llega a este bucle principal.  
+2. **Temporizadores por Software (`esp_timer`)**: Usamos timers nativos de Espressif en lugar de retardos bloqueantes (`vTaskDelay`), evitando la creación y el consumo de RAM de tareas adicionales.  
+3. **FSM y Manejador de Eventos**: Un motor encargado de evaluar el estado actual y el evento entrante para decidir la acción a tomar y realizar la transición de estado.
+
+---
+
+## 3. Estructura del Directorio del Proyecto
+
 A continuación se muestra una explicación de los archivos en la carpeta del proyecto `gatts_touch`.
 
 ```
@@ -48,114 +69,99 @@ medidor_aire/
 └── sdkconfig
 ```
 
-## Visualizando la Máquina de Estados Finitos (FSM)
-**📍 Los Estados (States)**
+---
 
-1. **S0: INICIALIZACIÓN (BOOT)**  
-   * El ESP32 recibe energía o se reinicia.  
-   * Se inicializa la memoria no volátil (NVS).  
-2. **S1: EVALUACIÓN DE RED**  
-   * Se lee la variable modo\_red desde la memoria NVS.  
-   * Se configura la interrupción/tarea del boton\_boot en segundo plano.  
-3. **S2: ARRANQUE DE COMUNICACIONES \- WI-FI**  
-   * Se inicializa el stack TCP/IP.  
-   * El dispositivo se conecta al router y obtiene una IP.  
-4. **S3: ARRANQUE DE COMUNICACIONES \- BLUETOOTH (BLE)**  
-   * Se inicializa el stack NimBLE y el servidor GATT.  
-   * El ESP32 comienza a anunciarse (Advertising).  
-5. **S4: ARRANQUE SENSOR (SGP30) Y BUCLE PRINCIPAL**  
-   * *A este estado se llega solo tras haber completado S2 o S3.*  
-   * Se levanta el bus I2C.  
-   * Comienza el *warmup* estricto de 15 segundos.  
-   * Arranca el motor Productor-Consumidor (FreeRTOS) con el timer perfectamente sincronizado a 1Hz.  
-6. **S5: TRANSICIÓN Y REINICIO**  
-   * Se invierte el valor de la red en la memoria NVS.  
-   * Se ejecuta esp\_restart() (reinicio por software).
+## 4. Máquina de Estados Finitos (FSM)
 
-**🔀 Las Transiciones (Transitions) y Eventos**
+### Los Estados (States)
+1. **S0: INICIALIZACIÓN (BOOT)**: El ESP32 recibe energía. Se inicializan NVS y el Event Loop.
+2. **S1: EVALUACIÓN DE RED**: Se lee la variable `modo_red` desde la NVS y se configura el botón BOOT.
+3. **S2: WI-FI & CoAP**: Se conecta al punto de acceso local y levanta la sesión cliente CoAP UDP.
+4. **S3: BLUETOOTH (BLE)**: Se inicializa el stack NimBLE y el ESP32 comienza a emitir *Advertising*.
+5. **S4: BUCLE PRINCIPAL SENSOR**: Levanta el bus I2C, realiza el *warmup* de 15s del SGP30 y arranca la transmisión a 1Hz.
+6. **S5: TRANSICIÓN Y REINICIO**: Invierte el valor del modo en NVS y fuerza un `esp_restart()`.
 
-* **\[ Power ON / Reset \]** ➔ Entra a **S0**  
-* **S0** ➔ (Automático al terminar NVS) ➔ **S1**  
-* **S1** ➔ (Si NVS \== 1\) ➔ **S2** (Modo Wi-Fi)  
-* **S1** ➔ (Si NVS \== 0\) ➔ **S3** (Modo Bluetooth)  
-* **S2** o **S3** ➔ (Automático al estabilizar la red) ➔ **S4** (Arranca el sensor)  
-* **Desde cualquier estado activo (S2, S3, o S4)** ➔ (Evento: Tarea boton\_boot detecta pulsación) ➔ **S5**  
-* **S5** ➔ (Reinicio por software) ➔ Vuelve a **S0**
+### Las Transiciones y Eventos
 
 ```
-S0: INICIALIZACIÓN (BOOT) → S1: EVALUACIÓN DE RED → S2: ARRANQUE DE COMUNICACIONES \- WI-FI → S3: ARRANQUE DE COMUNICACIONES \- BLUETOOTH (BLE) 
- → S4: ARRANQUE SENSOR (SGP30) Y BUCLE PRINCIPAL → S5: TRANSICIÓN Y REINICIO
+S0: BOOT ➔ S1: EVALUAR ➔ S2: WI-FI (Si NVS=1) ➔ S4: SENSOR ACTIVO
+➔ S3: BLE   (Si NVS=0) ➔ S4: SENSOR ACTIVO
+
+[Cualquier Estado Activo] ➔ (Pulsación Botón BOOT) ➔ S5: SWAP NVS & RESTART ➔ S0
 
 ```
 
-### Hardware requerido
-* Una placa de desarrollo con ESP32/ESP32-C3 SoC (e.g., ESP32-DevKitC, ESP-WROVER-KIT, etc.).
-* Un cable USB para alimentación y programación.
-* Sensor SGP30 Air Quality Sensor Component
-* Cuatro cables macho-hembra
+---
 
-El cableado ideal quedaría así:
-| Pin SGP30 | Color del Cable (Recomendado) | Pin ESP32-C3 |
-| :---- | :---- | :---- |
-| **VIN** | 🔴 **Rojo** | **3V3** |
-| **GND** | ⚫ **Negro** | **GND** |
-| **SDA** | 🔵 **Azul** (o Verde) | **GPIO 4** |
-| **SCL** | 🟡 **Amarillo** (o Blanco) | **GPIO 5** |
+## 5. Hardware Requerido y Cableado
+* Placa de desarrollo basada en **ESP32-C3 SoC**.
+* Sensor de calidad de aire **Sensirion SGP30**.
+* Cable de programación USB-C / Micro-USB.
 
-### Configuración del proyecto antes de puesta en marcha
-1. Ver todos los dispositivos conectados 
+### Mapeo de Pines (I2C)
+| Pin SGP30 | Color del Cable (Recomendado) | Pin ESP32-C3 | Descripción |
+| :--- | :--- | :--- | :--- |
+| **VIN** | 🔴 Rojo | **3V3** | Alimentación principal (3.3V) |
+| **GND** | ⚫ Negro | **GND** | Referencia de Tierra Común |
+| **SDA** | 🔵 Azul | **GPIO 4** | Línea de Datos I2C |
+| **SCL** | 🟡 Amarillo | **GPIO 5** | Línea de Reloj I2C |
+
+> **Nota sobre el Pin 1V8**: En los módulos comerciales del SGP30, este pin es una **salida regulada interna**, no una entrada. No debe conectarse a ninguna fuente externa.
+
+---
+
+## 6. Configuración del Proyecto (Menuconfig)
+Antes de compilar, es obligatorio configurar los parámetros del sistema interactivo ejecutando:
+```bash
+idf.py menuconfig
 ```
-ls /dev/ttyACM* /dev/ttyUSB*
+
+Ajustes Críticos Obligatorios:
+1. Redirección de Consola a USB Nativo:
+* `Component config` ➔ `ESP System Settings` ➔ `Channel for console output` ➔ `Seleccionar USB Serial/JTAG Controller`.
+
+2. Activación de la Pila Bluetooth:
+* `Component config` ➔ `Bluetooth` ➔ `Habilitar casilla Bluetooth`.
+* `Bluetooth Host` ➔ `Seleccionar NimBLE` - `BLE only`.
+
+3. Configuración de Red Local (Wi-Fi y Gateway CoAP):
+* `Wifi Configuration` ➔ Configurar el SSID y Password de tu router local.
+* `CoAP Server Configuration` ➔ Configurar la IP estática real de la Raspberry Pi (Gateway) y el puerto (5683).
+
+## 7. Construcción, Flasheo y Monitorización
+Para una puesta en marcha limpia desde la terminal, ejecuta la siguiente secuencia de comandos:
 ```
-y arrancar idf.py
-```
-# 1. Cargar el entorno
+# 1. Cargar las variables de entorno de ESP-IDF
 . ~/esp/esp-idf/export.sh
 
-# 2. Ir al proyecto
+# 2. Posicionarse en el directorio del firmware
 cd ~/espressif/medidor_aire
 
-# 3. Flashear y monitorizar
-idf.py fullclean            //Si ya habías configurado el target antes, limpia y recompila
+# 3. Definir el chip e inicializar configuraciones de memoria
 idf.py set-target esp32c3
-idf.py menuconfig
-idf.py build
-idf.py -p /dev/ttyACM0 flash
-idf.py -p /dev/ttyACM0 monitor
 
+# 4. Compilar, flashear y abrir el monitor serial en un solo comando
+idf.py -p /dev/ttyACM0 flash monitor
 ```
+(Para salir del monitor de telemetría en tiempo real, presiona las teclas `Ctrl + ]`).
 
-2. Abrir el menu de configuración del proyecto (`idf.py menuconfig`).
-* a. Ve a Component `config` y presiona Enter.
-* b. Baja hasta `ESP System Settings` y presiona Enter.
-* c. Busca la opción que dice `Channel for console output` (probablemente esté puesta en `Default: UART0`). Presiona Enter.
-* d. En la lista que aparece, selecciona `USB Serial/JTAG Controller` y presiona Enter.
-    
-3. Como este ejemplo usa NimBLE, debemos asegurarnos de que el Bluetooth está activado en el sistema base de Espressif. Antes de compilar, ejecuta: `idf.py menuconfig`
-* a. Ve a `Component config -> Bluetooth`
-* b. Habilita `Bluetooth`.
-* c. En `Bluetooth Host`, asegúrate de que esté seleccionado `NimBLE - BLE only`.
+## 8. Ejemplo de Salida en Consola
+Cuando el nodo arranca de forma exitosa en el bus local, verás logs interactivos similares a este:
 
-### Construir y flashear
-Construya el proyecto y fórmelo en la placa, luego ejecute la herramienta de monitorización para ver la salida en serie:
-* Ejecute `idf.py -p PORT flash monitor` para compilar, actualizar y monitorear el proyecto.
-(Para salir del monitor serial, escriba ``Ctrl-]``.)
-
-## Ejemplo de Salida
 ```
 ...
-I (134290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 20 ppb
-I (135290) NimBLE: [BLE] Dato listo para notificar -> CO2: 413 ppm | TVOC: 26 ppb
-I (136290) NimBLE: [BLE] Dato listo para notificar -> CO2: 406 ppm | TVOC: 28 ppb
-I (137290) NimBLE: [BLE] Dato listo para notificar -> CO2: 400 ppm | TVOC: 20 ppb
-I (138290) NimBLE: [BLE] Dato listo para notificar -> CO2: 405 ppm | TVOC: 21 ppb
-I (139290) NimBLE: [BLE] Dato listo para notificar -> CO2: 416 ppm | TVOC: 24 ppb
-I (140290) NimBLE: [BLE] Dato listo para notificar -> CO2: 402 ppm | TVOC: 23 ppb
+I (2364) wifi_coap_client: ¡Conectado exitosamente al SSID: MOVISTAR_3CB0!
+I (2364) wifi_coap_client: Cliente CoAP inicializado y Worker Task desplegada.
+I (2364) SENSOR_SGP30: Inicializando sensor (Bloqueo de 15s por Warmup)...
+I (17364) SENSOR_SGP30: Warmup completado. Arrancando el motor Productor-Consumidor...
+I (18374) wifi_coap_client: [CoAP POST] Enviado (mid=1380) ➔ CO2: 400 ppm
+I (19374) wifi_coap_client: [CoAP POST] Enviado (mid=1381) ➔ CO2: 405 ppm
+I (20374) wifi_coap_client: [CoAP POST] Enviado (mid=1382) ➔ CO2: 412 ppm
 ...
 
 ```
 
-## Guías de Errores
+## 9. Diccionario de Errores por Componente
 
 Para mantener el código modular, cada subsistema cuenta con su propia documentación técnica y su registro de errores comunes resueltos en su directorio local:
 
