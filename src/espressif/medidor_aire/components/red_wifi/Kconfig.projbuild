@@ -67,3 +67,19 @@ menu "Wifi Configuration"
     endchoice
 
 endmenu
+
+menu "CoAP Server Configuration"
+
+    config COAP_SERVER_IP
+        string "CoAP Server IP Address"
+        default "192.168.1.43"
+        help
+            IP de la Raspberry Pi donde se está ejecutando el script 'nodo_fog_coap.py'.
+
+    config COAP_SERVER_PORT
+        string "CoAP Server Port"
+        default "5683"
+        help
+            Puerto UDP estándar para la comunicación del servicio CoAP (por defecto 5683).
+
+endmenu

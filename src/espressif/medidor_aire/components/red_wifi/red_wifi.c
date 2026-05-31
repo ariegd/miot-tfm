@@ -20,8 +20,8 @@
 #define EXAMPLE_ESP_MAXIMUM_RETRY  CONFIG_ESP_MAXIMUM_RETRY
 
 // Configuración de red del Servidor CoAP (Gateway / Fog Node)
-#define COAP_SERVER_IP             "192.168.1.43"  // Reemplaza por la IP real de tu Raspberry Pi
-#define COAP_SERVER_PORT           "5683"           // Puerto UDP estándar de CoAP
+#define COAP_SERVER_IP             CONFIG_COAP_SERVER_IP  
+#define COAP_SERVER_PORT           CONFIG_COAP_SERVER_PORT
 
 static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0

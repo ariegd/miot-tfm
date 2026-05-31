@@ -534,6 +534,13 @@ CONFIG_ESP_WIFI_AUTH_WPA2_PSK=y
 # end of Wifi Configuration
 
 #
+# CoAP Server Configuration
+#
+CONFIG_COAP_SERVER_IP="192.168.1.43"
+CONFIG_COAP_SERVER_PORT="5683"
+# end of CoAP Server Configuration
+
+#
 # Compiler options
 #
 # CONFIG_COMPILER_OPTIMIZATION_DEBUG is not set

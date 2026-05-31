@@ -277,6 +277,8 @@
     "COAP_OBSERVE_PERSIST": false,
     "COAP_OSCORE_SUPPORT": false,
     "COAP_Q_BLOCK": false,
+    "COAP_SERVER_IP": "192.168.1.43",
+    "COAP_SERVER_PORT": "5683",
     "COAP_SERVER_SUPPORT": false,
     "COAP_TCP_SUPPORT": true,
     "COAP_THREAD_SAFE": false,

@@ -6149,6 +6149,34 @@
     {
         "children": [
             {
+                "children": [],
+                "depends_on": null,
+                "help": "IP de la Raspberry Pi donde se est\u00e1 ejecutando el script 'nodo_fog_coap.py'.",
+                "id": "COAP_SERVER_IP",
+                "name": "COAP_SERVER_IP",
+                "range": null,
+                "title": "CoAP Server IP Address",
+                "type": "string"
+            },
+            {
+                "children": [],
+                "depends_on": null,
+                "help": "Puerto UDP est\u00e1ndar para la comunicaci\u00f3n del servicio CoAP (por defecto 5683).",
+                "id": "COAP_SERVER_PORT",
+                "name": "COAP_SERVER_PORT",
+                "range": null,
+                "title": "CoAP Server Port",
+                "type": "string"
+            }
+        ],
+        "depends_on": null,
+        "id": "coap-server-configuration",
+        "title": "CoAP Server Configuration",
+        "type": "menu"
+    },
+    {
+        "children": [
+            {
                 "children": [
                     {
                         "children": [],

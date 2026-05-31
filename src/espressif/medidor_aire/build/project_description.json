@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "medidor_aire",
-    "project_version":    "500ae7b-dirty",
+    "project_version":    "f8a8b1c-dirty",
     "project_path":       "/home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire",
     "idf_path":           "/home/zodd/esp/esp-idf",
     "build_dir":          "/home/zodd/Descargas/miot-tfm/src/espressif/medidor_aire/build",
