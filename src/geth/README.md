@@ -40,7 +40,7 @@ La red opera bajo un mecanismo de consenso eficiente para sistemas embebidos, es
 
 A continuación, se detalla la topología de archivos requerida en el directorio de cada nodo Fog:
 
-´´´
+```
 red_co2/
 ├── 10cuentas.txt              (Registro de direcciones y credenciales del laboratorio)
 ├── genesis.json                (Configuración del bloque cero y consenso Clique PoA)
@@ -56,7 +56,7 @@ red_co2/
 │   ├── chaindata/          (Estructura del libro contable de la red)
 │   └── lightchaindata/
 └── keystore/               (Llaves criptográficas de las cuentas locales del nodo)
-´´´
+```
 
 ---
 
