@@ -118,7 +118,8 @@ Ejecutar el comando correspondiente según la IP y Dirección de cada nodo:
 geth --datadir ./nodo --networkid 12345 --port 30303 --nat extip:<IP_NODO> \
 --allow-insecure-unlock --password password.txt --mine \
 --miner.etherbase "<DIRECCION_ETH>" --unlock "<DIRECCION_ETH>" \
---http --http.addr "0.0.0.0" --http.api "eth,net,web3,personal,miner"
+--http --http.addr "0.0.0.0" --http.api "eth,net,web3,personal,miner" \
+--http.corsdomain "*" --nodiscover --bootnodes ""
 ```
 
 ### Step 3: Verificación de Conexión P2P
