@@ -1,0 +1,146 @@
+usuario@rpi-nodo1:~/red_co2 $ for i in {1..11}; do geth --datadir ./nodo account new --password password.txt; done
+INFO [06-16|21:21:30.278] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:30.283] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x125dE73500FaB486F908F39b09d9D323eb982FFD
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-30.285281439Z--125de73500fab486f908f39b09d9d323eb982ffd
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:21:35.403] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:35.408] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x686A64A687ca36aB514b899Fe7341fc242232e5f
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-35.410820675Z--686a64a687ca36ab514b899fe7341fc242232e5f
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:21:40.471] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:40.476] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x2e95C4AE8110c83bAee568Ded4aBce2340C72792
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-40.478460461Z--2e95c4ae8110c83baee568ded4abce2340c72792
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:21:45.555] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:45.561] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x18222f72C5Db1983b4E3ED21413D9795eEc37415
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-45.564537435Z--18222f72c5db1983b4e3ed21413d9795eec37415
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:21:50.608] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:50.613] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0xe7F22A72A3E5360DE00e900783839C11Ba617EB1
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-50.615401812Z--e7f22a72a3e5360de00e900783839c11ba617eb1
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:21:55.663] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:21:55.669] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x207F2dC92bcA3071C7Fca3F8d2d5Ad044B8b9a51
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-21-55.672570518Z--207f2dc92bca3071c7fca3f8d2d5ad044b8b9a51
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:22:00.713] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:22:00.718] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0xca8D558dE0271cbf0890bA117B42C49c37D50F05
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-22-00.720634816Z--ca8d558de0271cbf0890ba117b42c49c37d50f05
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:22:05.778] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:22:05.783] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x9097807A4C513572155De0228b0F525e33F5B99D
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-22-05.785682306Z--9097807a4c513572155de0228b0f525e33f5b99d
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:22:10.865] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:22:10.871] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x7fe2fa8d4c1425b7f7e5E6d38CB83a5E65E3A747
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-22-10.873531975Z--7fe2fa8d4c1425b7f7e5e6d38cb83a5e65e3a747
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:22:15.950] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:22:15.957] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x0b22D43b663d7186Adb7CeAe5Fe91201dF0820C2
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-22-15.959810375Z--0b22d43b663d7186adb7ceae5fe91201df0820c2
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+INFO [06-16|21:22:21.081] Maximum peer count                       ETH=50 total=50
+INFO [06-16|21:22:21.087] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+
+Your new key was generated
+
+Public address of the key:   0x6Df43412e524f4a922d959877aB387DA3bD610c2
+Path of the secret key file: nodo/keystore/UTC--2026-06-16T19-22-21.089059154Z--6df43412e524f4a922d959877ab387da3bd610c2
+
+- You can share your public address with anyone. Others need it to interact with you.
+- You must NEVER share the secret key with anyone! The key controls access to your funds!
+- You must BACKUP your key file! Without the key, it's impossible to access account funds!
+- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!
+
+usuario@rpi-nodo1:~/red_co2 $ 
+
