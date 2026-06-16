@@ -27,7 +27,7 @@ mv resultados_latencia.csv latencia_carga_baja_1nodo.csv
 Con los scripts listos, ya se puede proceder a iniciar tus 4 fases experimentales de 5 minutos consecutivas para recopilar los registros limpios en el archivo `.csv`:  
 1. Baja: Únicamente tu ESP32-C3 físico encendido.  
 2. Media: ESP32-C3 físico + 3 terminales de `simular_sensor.py` corriendo en paralelo.  
-3. Alta: ESP32-C3 físico + 7 terminales concurrentes de simulación.  
+3. Alta: ESP32-C3 físico + 7 terminales concurrentes de simulación.  alta
 4. Máxima: ESP32-C3 físico + las 11 instancias simuladas.  
 
  
