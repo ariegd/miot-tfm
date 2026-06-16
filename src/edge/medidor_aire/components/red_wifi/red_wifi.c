@@ -10,6 +10,9 @@
 #include "esp_log.h"
 #include "red_wifi.h"
 #include "sensor_sgp30.h"
+#include <time.h>
+#include <sys/time.h>
+#include "esp_sntp.h"
 
 // Componente CoAP nativo de ESP-IDF
 #include "coap3/coap.h"
@@ -84,14 +87,17 @@ static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int
             return;
         }
 
-        // Formateamos el payload estrictamente como texto plano del entero de CO2
-        // para cumplir con la línea: valor_co2 = int(request.payload.decode('utf-8')) del servidor
-        char payload[16];
-        snprintf(payload, sizeof(payload), "%d", data->co2);
+        // Obtener el timestamp Unix actual en milisegundos desde el RTC sincronizado por SNTP
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        long long t_origen = ((long long)tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+
+        // Formatear el payload estrictamente como JSON para cumplir con la Raspberry Pi
+        char payload[64];
+        snprintf(payload, sizeof(payload), "{\"co2\":%d,\"t_origen\":%lld}", data->co2, t_origen);
 
         /* Creación del PDU CoAP:
            - Usamos COAP_MESSAGE_NON (Mensaje No Confirmable): Ideal para telemetría continua (1s) 
-             porque evita sobrecargar el canal esperando ACKs.
            - Método: COAP_REQUEST_POST
         */
         coap_pdu_t *pdu = coap_new_pdu(COAP_MESSAGE_NON, COAP_REQUEST_POST, coap_session);
@@ -103,10 +109,10 @@ static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int
         // Registrar la Uri-Path. Equivale a apuntar a: coap://<IP>/co2
         coap_add_option(pdu, COAP_OPTION_URI_PATH, 3, (const uint8_t *)"co2");
 
-        // Añadir cabecera Content-Format: text/plain (ID: 0 según IANA)
+        // Añadir cabecera Content-Format: application/json (ID: 50 según IANA)
         uint8_t opt_buf[4];
         coap_add_option(pdu, COAP_OPTION_CONTENT_FORMAT,
-                        coap_encode_var_safe(opt_buf, sizeof(opt_buf), COAP_MEDIATYPE_TEXT_PLAIN),
+                        coap_encode_var_safe(opt_buf, sizeof(opt_buf), COAP_MEDIATYPE_APPLICATION_JSON),
                         opt_buf);
 
         // Adjuntar los datos medidos al paquete
@@ -117,7 +123,7 @@ static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int
         if (mid == COAP_INVALID_MID) {
             ESP_LOGE(TAG, "Fallo en la transmisión del paquete CoAP");
         } else {
-            ESP_LOGI(TAG, "[CoAP POST] Enviado con éxito (mid=%d) -> CO2: %s ppm", mid, payload);
+            ESP_LOGI(TAG, "[CoAP POST] Enviado JSON -> %s", payload);
         }
 
         // Despachar el ciclo interno de Entrada/Salida de libcoap sin bloquear la tarea
@@ -125,7 +131,7 @@ static void wifi_telemetry_handler(void* handler_arg, esp_event_base_t base, int
     }
 }
 
-// Manejador del ciclo de vida de la conexión Wi-Fi (Conservado intacto)
+// Manejador del ciclo de vida de la conexión Wi-Fi
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
@@ -178,6 +184,12 @@ void red_wifi_start(void) {
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "¡Conectado exitosamente al SSID: %s!", EXAMPLE_ESP_WIFI_SSID);
 
+        // Inicialización de SNTP apuntando al pool global de servidores de tiempo
+        esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+        esp_sntp_setservername(0, "pool.ntp.org"); 
+        esp_sntp_init();
+        ESP_LOGI(TAG, "Servicio SNTP inicializado.");
+
         // 1. Iniciamos la sesión persistente hacia el servidor CoAP de la RPi
         coap_client_start();
 
@@ -188,3 +200,4 @@ void red_wifi_start(void) {
         ESP_LOGI(TAG, "Fallo absoluto al conectar al SSID: %s", EXAMPLE_ESP_WIFI_SSID);
     }
 }
+
