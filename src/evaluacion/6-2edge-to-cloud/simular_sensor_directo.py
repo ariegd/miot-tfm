@@ -32,7 +32,7 @@ except IndexError:
     CUENTA_EMISORA = w3.eth.accounts[0]
     print(f"[ALERTA] Índice no encontrado. Usando cuenta por defecto: {CUENTA_EMISORA}")
 
-print("🚀 Iniciando modo comparativo: Edge-to-Blockchain directo (Sin Capa Fog)...")
+print(" Iniciando modo comparativo: Edge-to-Blockchain directo (Sin Capa Fog)...")
 
 # Inicializar el archivo CSV con su cabecera si no existe
 with open("latencia_directo_base.csv", "w") as f:
@@ -58,7 +58,7 @@ while True:
         
         # Cálculo de la Latencia E2E Absoluta del escenario sin optimizar
         latencia_e2e = t_confirmacion - t_origen
-        print(f"✅ Indexado en bloque {receipt.blockNumber}. Latencia E2E Base: {latencia_e2e} ms")
+        print(f" Indexado en bloque {receipt.blockNumber}. Latencia E2E Base: {latencia_e2e} ms")
         
         # Escritura persistente e inmediata en el CSV comparativo
         with open("latencia_directo_base.csv", "a") as f:
@@ -71,5 +71,5 @@ while True:
         print("\nSimulación finalizada.")
         break
     except Exception as e:
-        print(f"❌ Error por congestión o rechazo en la EVM: {e}")
+        print(f" Error por congestión o rechazo en la EVM: {e}")
         time.sleep(2)

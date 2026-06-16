@@ -1,0 +1,27 @@
+(venv) zodd@debian:~/mi_proyecto$ python3 autorizar_simuladores.py 
+ Iniciando proceso de federación desde el Nodo Administrador...
+[1/11] Registrando en SC: 0x125dE73500FaB486F908F39b09d9D323eb982FFD
+       -> Estatus: Autorizado y Fondeado con éxito.
+[2/11] Registrando en SC: 0x686A64A687ca36aB514b899Fe7341fc242232e5f
+       -> Estatus: Autorizado y Fondeado con éxito.
+[3/11] Registrando en SC: 0x2e95C4AE8110c83bAee568Ded4aBce2340C72792
+       -> Estatus: Autorizado y Fondeado con éxito.
+[4/11] Registrando en SC: 0x18222f72C5Db1983b4E3ED21413D9795eEc37415
+       -> Estatus: Autorizado y Fondeado con éxito.
+[5/11] Registrando en SC: 0xe7F22A72A3E5360DE00e900783839C11Ba617EB1
+       -> Estatus: Autorizado y Fondeado con éxito.
+[6/11] Registrando en SC: 0x207F2dC92bcA3071C7Fca3F8d2d5Ad044B8b9a51
+       -> Estatus: Autorizado y Fondeado con éxito.
+[7/11] Registrando en SC: 0xca8D558dE0271cbf0890bA117B42C49c37D50F05
+       -> Estatus: Autorizado y Fondeado con éxito.
+[8/11] Registrando en SC: 0x9097807A4C513572155De0228b0F525e33F5B99D
+       -> Estatus: Autorizado y Fondeado con éxito.
+[9/11] Registrando en SC: 0x7fe2fa8d4c1425b7f7e5E6d38CB83a5E65E3A747
+       -> Estatus: Autorizado y Fondeado con éxito.
+[10/11] Registrando en SC: 0x0b22D43b663d7186Adb7CeAe5Fe91201dF0820C2
+       -> Estatus: Autorizado y Fondeado con éxito.
+[11/11] Registrando en SC: 0x6Df43412e524f4a922d959877aB387DA3bD610c2
+       -> Estatus: Autorizado y Fondeado con éxito.
+
+ ¡Entorno preparado! Las cuentas ya son válidas ante la EVM y poseen balance propio.
+(venv) zodd@debian:~/mi_proyecto$ 
